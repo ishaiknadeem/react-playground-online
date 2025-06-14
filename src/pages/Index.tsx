@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Code, Timer, Users, ArrowRight, CheckCircle } from "lucide-react";
@@ -21,9 +20,11 @@ const Index = () => {
             <Link to="/exams" className="text-gray-600 hover:text-blue-600 transition-colors font-medium flex items-center h-9">
               Exams
             </Link>
-            <Button variant="outline" size="sm" className="h-9">
-              Sign In
-            </Button>
+            <Link to="/login">
+              <Button variant="outline" size="sm" className="h-9">
+                Sign In
+              </Button>
+            </Link>
           </div>
           {/* Mobile menu button - you can add this later if needed */}
           <div className="md:hidden">
