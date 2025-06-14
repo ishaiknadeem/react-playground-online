@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 
 interface PreviewProps {
@@ -24,6 +23,16 @@ const Preview: React.FC<PreviewProps> = ({
 
   const previewContent = useMemo(() => {
     if (isLogicMode) {
+      // Properly escape JavaScript code for safe injection
+      const escapedJavaScript = javascript
+        .replace(/\\/g, '\\\\')  // Escape backslashes first
+        .replace(/'/g, "\\'")    // Escape single quotes
+        .replace(/"/g, '\\"')    // Escape double quotes
+        .replace(/`/g, '\\`')    // Escape backticks
+        .replace(/\r?\n/g, '\\n') // Escape newlines
+        .replace(/\r/g, '\\r')   // Escape carriage returns
+        .replace(/\t/g, '\\t');  // Escape tabs
+
       // Pure JavaScript Logic Mode
       return `
         <!DOCTYPE html>
@@ -229,17 +238,18 @@ const Preview: React.FC<PreviewProps> = ({
               sendToParent('log', '🚀 Starting JavaScript execution...', Date.now());
               
               try {
-                // Execute the user's JavaScript code
-                const userCode = \`${javascript.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
+                // Get the user's JavaScript code
+                const userCode = '${escapedJavaScript}';
                 
                 if (!userCode.trim()) {
                   console.log('No JavaScript code to execute');
                   return;
                 }
                 
-                // Use Function constructor for safer execution
-                const executeFunction = new Function(userCode);
-                executeFunction();
+                console.log('Executing JavaScript code...');
+                
+                // Execute the user's code using eval in a try-catch
+                eval(userCode);
                 
                 console.log('✅ JavaScript execution completed successfully!');
               } catch (error) {
@@ -250,11 +260,11 @@ const Preview: React.FC<PreviewProps> = ({
               }
             }
             
-            // Execute immediately when DOM is ready
+            // Execute when DOM is ready
             if (document.readyState === 'loading') {
               document.addEventListener('DOMContentLoaded', executeUserCode);
             } else {
-              executeUserCode();
+              setTimeout(executeUserCode, 100);
             }
           </script>
         </body>
