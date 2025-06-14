@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Timer, Play, Pause, RotateCcw, CheckCircle } from 'lucide-react';
+import ExamInterface from '@/components/exam/ExamInterface';
+import { practiceApi } from '@/services/practiceApi';
+import { useQuery } from '@tanstack/react-query';
 
 interface SessionConfig {
   company?: string;
@@ -18,10 +21,24 @@ const InterviewSession = () => {
   const navigate = useNavigate();
   const { sessionId, config } = location.state as { sessionId: string; config: SessionConfig } || {};
   
-  const [timeLeft, setTimeLeft] = useState((config?.duration || 60) * 60); // Convert minutes to seconds
+  const [timeLeft, setTimeLeft] = useState((config?.duration || 60) * 60);
   const [isActive, setIsActive] = useState(false);
   const [currentProblem, setCurrentProblem] = useState(1);
   const [totalProblems] = useState(2);
+  const [sessionStarted, setSessionStarted] = useState(false);
+  const [currentQuestionId, setCurrentQuestionId] = useState<string>('two-sum');
+
+  // Get questions for the interview session
+  const { data: questions = [] } = useQuery({
+    queryKey: ['practice-questions'],
+    queryFn: practiceApi.getQuestions,
+  });
+
+  const { data: currentQuestion } = useQuery({
+    queryKey: ['practice-question', currentQuestionId],
+    queryFn: () => practiceApi.getQuestion(currentQuestionId),
+    enabled: !!currentQuestionId && sessionStarted,
+  });
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -32,8 +49,7 @@ const InterviewSession = () => {
       }, 1000);
     } else if (timeLeft === 0) {
       setIsActive(false);
-      // Handle session timeout
-      console.log('Session timeout');
+      handleEndSession();
     }
     
     return () => {
@@ -49,6 +65,14 @@ const InterviewSession = () => {
 
   const handleStartSession = () => {
     setIsActive(true);
+    setSessionStarted(true);
+    // Set first question based on difficulty and categories
+    const filteredQuestions = questions.filter(q => 
+      config?.difficulty === 'Mixed' || q.difficulty === config?.difficulty
+    );
+    if (filteredQuestions.length > 0) {
+      setCurrentQuestionId(filteredQuestions[0].id);
+    }
   };
 
   const handlePauseSession = () => {
@@ -59,17 +83,28 @@ const InterviewSession = () => {
     navigate('/practice');
   };
 
-  const handleNextProblem = () => {
+  const handleSubmit = async (code: any, testResults: any, tabSwitchData: any) => {
+    console.log('Interview session submission:', { currentQuestionId, code, testResults });
+    
     if (currentProblem < totalProblems) {
+      // Move to next problem
+      const filteredQuestions = questions.filter(q => 
+        config?.difficulty === 'Mixed' || q.difficulty === config?.difficulty
+      );
+      
+      if (filteredQuestions.length > currentProblem) {
+        setCurrentQuestionId(filteredQuestions[currentProblem].id);
+      }
       setCurrentProblem(currentProblem + 1);
     } else {
+      // End session
       handleEndSession();
     }
   };
 
   if (!config) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900 flex items-center justify-center">
         <div className="text-white text-center">
           <h1 className="text-2xl font-bold mb-4">Session Not Found</h1>
           <p className="mb-4">No session configuration found.</p>
@@ -82,13 +117,12 @@ const InterviewSession = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900">
-      {/* Header */}
-      <div className="bg-white/10 backdrop-blur-md border-b border-white/20 sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
+  if (!sessionStarted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-gray-900">
+        <div className="bg-white/10 backdrop-blur-md border-b border-white/20 sticky top-0 z-40">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="flex justify-between items-center h-16">
               <Button 
                 onClick={() => navigate('/practice')} 
                 variant="ghost"
@@ -104,31 +138,18 @@ const InterviewSession = () => {
                 <span className="text-white font-medium">Interview Session</span>
               </div>
               
-              {config.company && (
-                <Badge className="bg-purple-600 text-white">
-                  {config.company}
-                </Badge>
-              )}
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="text-white text-sm">
-                Problem {currentProblem} of {totalProblems}
-              </div>
               <div className="bg-red-600 text-white px-3 py-1 rounded-md font-mono text-lg">
                 {formatTime(timeLeft)}
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {!isActive ? (
+        <div className="max-w-4xl mx-auto px-6 py-12">
           <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
             <CardHeader>
               <CardTitle className="text-2xl text-center">
-                {sessionId === 'custom' ? 'Custom Interview Session' : 'Interview Session'}
+                {config.company ? `${config.company} Interview Session` : 'Technical Interview Session'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -168,48 +189,77 @@ const InterviewSession = () => {
               </div>
             </CardContent>
           </Card>
-        ) : (
-          <div className="space-y-6">
-            {/* Session Controls */}
-            <div className="flex justify-between items-center">
-              <div className="flex items-center space-x-4">
-                <Button onClick={handlePauseSession} variant="outline" size="sm">
-                  <Pause className="w-4 h-4 mr-2" />
-                  Pause
-                </Button>
-                <span className="text-white">Problem {currentProblem} of {totalProblems}</span>
-              </div>
-              
-              <Button onClick={handleNextProblem} className="bg-green-600 hover:bg-green-700">
-                {currentProblem < totalProblems ? 'Next Problem' : 'Finish Session'}
-              </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p>Loading problem...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const examQuestion = {
+    ...currentQuestion,
+    timeLimit: Math.floor(timeLeft / 60),
+  };
+
+  return (
+    <div className="relative">
+      <div className="absolute top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center space-x-4">
+            <Button 
+              onClick={handleEndSession} 
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-gray-800"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              End Session
+            </Button>
+            
+            <div className="flex items-center space-x-2">
+              <Timer className="w-4 h-4 text-blue-400" />
+              <span className="text-white text-sm">Interview Session</span>
             </div>
             
-            {/* Problem Content */}
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
-              <CardContent className="p-8">
-                <div className="text-center">
-                  <h2 className="text-2xl font-bold mb-4">Problem {currentProblem}</h2>
-                  <p className="text-gray-300 mb-6">
-                    This is where the actual coding problem would be displayed.
-                    In a full implementation, this would load a real problem from your question bank.
-                  </p>
-                  <div className="bg-gray-800 rounded-lg p-6 text-left">
-                    <h3 className="text-lg font-semibold mb-2">Example Problem:</h3>
-                    <p className="text-gray-300 mb-4">
-                      Given an array of integers, find two numbers such that they add up to a specific target number.
-                    </p>
-                    <div className="bg-gray-900 rounded p-4 font-mono text-sm">
-                      <p>Input: nums = [2,7,11,15], target = 9</p>
-                      <p>Output: [0,1]</p>
-                      <p>Explanation: nums[0] + nums[1] = 2 + 7 = 9</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {config.company && (
+              <Badge className="bg-purple-600 text-white">
+                {config.company}
+              </Badge>
+            )}
           </div>
-        )}
+          
+          <div className="flex items-center space-x-4">
+            <Button onClick={handlePauseSession} variant="outline" size="sm" className="text-white border-gray-600">
+              <Pause className="w-4 h-4 mr-1" />
+              Pause
+            </Button>
+            
+            <div className="text-white text-sm">
+              Problem {currentProblem} of {totalProblems}
+            </div>
+            
+            <div className="bg-red-600 text-white px-3 py-1 rounded-md font-mono">
+              {formatTime(timeLeft)}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="pt-16">
+        <ExamInterface 
+          question={examQuestion}
+          startTime={new Date()}
+          onSubmit={handleSubmit}
+        />
       </div>
     </div>
   );

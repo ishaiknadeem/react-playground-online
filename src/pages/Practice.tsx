@@ -1,28 +1,32 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Code2, Clock, Trophy, Search, Play, Star, TrendingUp, LogOut, User, Target, Zap, Award, Calendar, Heart, Timer, BookOpen, Users } from 'lucide-react';
+import { Code2, Clock, Trophy, Search, Play, Star, LogOut, User, Target, Zap, Award, Calendar, Heart, Timer, BookOpen } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { practiceApi, PracticeQuestion, UserProgress } from '@/services/practiceApi';
 import { useQuery } from '@tanstack/react-query';
 import AchievementBadges, { Achievement } from '@/components/practice/AchievementBadges';
 import LearningPaths, { LearningPath } from '@/components/practice/LearningPaths';
 import InterviewPrepMode from '@/components/practice/InterviewPrepMode';
+import ProgressTracker from '@/components/practice/ProgressTracker';
+import SubmissionHistory from '@/components/practice/SubmissionHistory';
 
 const Practice = () => {
+  const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sortBy, setSortBy] = useState('popularity');
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+
+  // Get tab from URL params
+  const activeTab = searchParams.get('tab') || 'problems';
 
   const { data: questions = [], isLoading: questionsLoading } = useQuery({
     queryKey: ['practice-questions'],
@@ -34,14 +38,34 @@ const Practice = () => {
     queryFn: practiceApi.getUserProgress,
   });
 
-  // Mock achievements data
+  // Enhanced mock user progress with more realistic data
+  const enhancedUserProgress = userProgress || {
+    totalSolved: 15,
+    easyCount: 8,
+    mediumCount: 5,
+    hardCount: 2,
+    streak: 12,
+    totalAttempts: 23,
+    practiceTime: '8.5h'
+  };
+
+  // Calculate total questions by difficulty
+  const totalQuestions = React.useMemo(() => {
+    return {
+      easy: questions.filter(q => q.difficulty === 'Easy').length || 20,
+      medium: questions.filter(q => q.difficulty === 'Medium').length || 15,
+      hard: questions.filter(q => q.difficulty === 'Hard').length || 10
+    };
+  }, [questions]);
+
+  // Enhanced achievements with real progress
   const achievements: Achievement[] = [
     {
       id: 'first-solve',
       title: 'First Steps',
       description: 'Solved your first problem',
       icon: <Star className="w-4 h-4" />,
-      earned: (userProgress?.totalSolved || 0) > 0,
+      earned: enhancedUserProgress.totalSolved > 0,
       category: 'solving'
     },
     {
@@ -49,7 +73,7 @@ const Practice = () => {
       title: 'Consistent Learner',
       description: 'Maintained a 7-day streak',
       icon: <Zap className="w-4 h-4" />,
-      earned: (userProgress?.streak || 0) >= 7,
+      earned: enhancedUserProgress.streak >= 7,
       category: 'streak'
     },
     {
@@ -57,19 +81,39 @@ const Practice = () => {
       title: 'Problem Solver',
       description: 'Solved 10 problems',
       icon: <Trophy className="w-4 h-4" />,
-      earned: (userProgress?.totalSolved || 0) >= 10,
-      progress: userProgress?.totalSolved || 0,
+      earned: enhancedUserProgress.totalSolved >= 10,
+      progress: enhancedUserProgress.totalSolved,
       maxProgress: 10,
+      category: 'solving'
+    },
+    {
+      id: 'easy-master',
+      title: 'Easy Mode Master',
+      description: 'Solved 5 easy problems',
+      icon: <Target className="w-4 h-4" />,
+      earned: enhancedUserProgress.easyCount >= 5,
+      progress: enhancedUserProgress.easyCount,
+      maxProgress: 5,
+      category: 'solving'
+    },
+    {
+      id: 'medium-challenger',
+      title: 'Medium Challenger',
+      description: 'Solved 3 medium problems',
+      icon: <Award className="w-4 h-4" />,
+      earned: enhancedUserProgress.mediumCount >= 3,
+      progress: enhancedUserProgress.mediumCount,
+      maxProgress: 3,
       category: 'solving'
     }
   ];
 
-  // Mock learning paths data
+  // Enhanced learning paths with better progress tracking
   const learningPaths: LearningPath[] = [
     {
       id: 'arrays-basics',
-      title: 'Arrays & Strings',
-      description: 'Master the basics of arrays and string manipulation',
+      title: 'Arrays & Strings Fundamentals',
+      description: 'Master the essentials of arrays and string manipulation techniques',
       difficulty: 'Beginner',
       estimatedTime: '2-3 weeks',
       problems: ['two-sum', 'reverse-string', 'valid-parentheses'],
@@ -78,13 +122,23 @@ const Practice = () => {
     },
     {
       id: 'dynamic-programming',
-      title: 'Dynamic Programming',
-      description: 'Learn to solve complex optimization problems',
+      title: 'Dynamic Programming Mastery',
+      description: 'Learn to solve complex optimization problems with DP patterns',
       difficulty: 'Advanced',
       estimatedTime: '4-6 weeks',
-      problems: ['fibonacci', 'coin-change', 'longest-subsequence'],
-      completedProblems: [],
+      problems: ['fibonacci-dp', 'best-time-stock', 'longest-substring'],
+      completedProblems: ['fibonacci-dp'],
       category: 'Algorithms'
+    },
+    {
+      id: 'interview-prep',
+      title: 'Interview Ready',
+      description: 'Most commonly asked questions in technical interviews',
+      difficulty: 'Mixed',
+      estimatedTime: '3-4 weeks',
+      problems: ['two-sum', 'binary-search', 'merge-intervals', 'valid-parentheses'],
+      completedProblems: ['two-sum', 'valid-parentheses'],
+      category: 'Interview Prep'
     }
   ];
 
@@ -99,7 +153,6 @@ const Practice = () => {
       return matchesSearch && matchesDifficulty && matchesCategory;
     });
 
-    // Sort questions
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'title':
@@ -152,6 +205,10 @@ const Practice = () => {
     navigate('/practice/interview-session', { state: { sessionId, config } });
   };
 
+  const handleRetryProblem = (questionId: string) => {
+    navigate(`/practice/problem?id=${questionId}`);
+  };
+
   if (questionsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
@@ -165,7 +222,7 @@ const Practice = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Minimal Header */}
+      {/* Header */}
       <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex justify-between items-center h-16">
@@ -180,11 +237,11 @@ const Practice = () => {
               <div className="hidden md:flex items-center space-x-4 text-sm text-slate-600">
                 <div className="flex items-center space-x-1">
                   <Zap className="w-4 h-4 text-orange-500" />
-                  <span>{userProgress?.streak || 0}</span>
+                  <span>{enhancedUserProgress.streak}</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <Trophy className="w-4 h-4 text-emerald-500" />
-                  <span>{userProgress?.totalSolved || 0}</span>
+                  <span>{enhancedUserProgress.totalSolved}</span>
                 </div>
               </div>
               <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-600">
@@ -197,12 +254,13 @@ const Practice = () => {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
-        <Tabs defaultValue="problems" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-4 max-w-md mx-auto bg-white/60 backdrop-blur-sm">
+        <Tabs value={activeTab} onValueChange={(value) => navigate(`/practice?tab=${value}`)} className="space-y-8">
+          <TabsList className="grid w-full grid-cols-5 max-w-lg mx-auto bg-white/60 backdrop-blur-sm">
             <TabsTrigger value="problems" className="text-sm">Problems</TabsTrigger>
             <TabsTrigger value="paths" className="text-sm">Paths</TabsTrigger>
             <TabsTrigger value="interview" className="text-sm">Interview</TabsTrigger>
             <TabsTrigger value="progress" className="text-sm">Progress</TabsTrigger>
+            <TabsTrigger value="history" className="text-sm">History</TabsTrigger>
           </TabsList>
 
           <TabsContent value="problems" className="space-y-6">
@@ -212,7 +270,7 @@ const Practice = () => {
                 <div className="flex items-center space-x-2">
                   <Trophy className="w-5 h-5 text-emerald-500" />
                   <div>
-                    <p className="text-lg font-semibold text-slate-900">{userProgress?.totalSolved || 0}</p>
+                    <p className="text-lg font-semibold text-slate-900">{enhancedUserProgress.totalSolved}</p>
                     <p className="text-xs text-slate-600">Solved</p>
                   </div>
                 </div>
@@ -221,7 +279,7 @@ const Practice = () => {
                 <div className="flex items-center space-x-2">
                   <Zap className="w-5 h-5 text-orange-500" />
                   <div>
-                    <p className="text-lg font-semibold text-slate-900">{userProgress?.streak || 0}</p>
+                    <p className="text-lg font-semibold text-slate-900">{enhancedUserProgress.streak}</p>
                     <p className="text-xs text-slate-600">Day Streak</p>
                   </div>
                 </div>
@@ -239,7 +297,7 @@ const Practice = () => {
                 <div className="flex items-center space-x-2">
                   <Clock className="w-5 h-5 text-purple-500" />
                   <div>
-                    <p className="text-lg font-semibold text-slate-900">{userProgress?.practiceTime || '0h'}</p>
+                    <p className="text-lg font-semibold text-slate-900">{enhancedUserProgress.practiceTime}</p>
                     <p className="text-xs text-slate-600">Practice Time</p>
                   </div>
                 </div>
@@ -355,34 +413,15 @@ const Practice = () => {
           </TabsContent>
 
           <TabsContent value="progress" className="space-y-6">
-            {/* Progress Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-medium text-slate-900">Easy Problems</h3>
-                  <span className="text-sm text-slate-600">{userProgress?.easyCount || 0} solved</span>
-                </div>
-                <Progress value={(userProgress?.easyCount || 0) / questions.filter(q => q.difficulty === 'Easy').length * 100} className="h-2" />
-              </div>
-              
-              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-medium text-slate-900">Medium Problems</h3>
-                  <span className="text-sm text-slate-600">{userProgress?.mediumCount || 0} solved</span>
-                </div>
-                <Progress value={(userProgress?.mediumCount || 0) / questions.filter(q => q.difficulty === 'Medium').length * 100} className="h-2" />
-              </div>
-              
-              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-medium text-slate-900">Hard Problems</h3>
-                  <span className="text-sm text-slate-600">{userProgress?.hardCount || 0} solved</span>
-                </div>
-                <Progress value={(userProgress?.hardCount || 0) / questions.filter(q => q.difficulty === 'Hard').length * 100} className="h-2" />
-              </div>
-            </div>
-
+            <ProgressTracker 
+              userProgress={enhancedUserProgress} 
+              totalQuestions={totalQuestions}
+            />
             <AchievementBadges achievements={achievements} />
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-6">
+            <SubmissionHistory onRetryProblem={handleRetryProblem} />
           </TabsContent>
         </Tabs>
       </div>
