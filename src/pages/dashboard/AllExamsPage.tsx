@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,7 +80,6 @@ const AllExamsPage = () => {
   };
 
   const handleViewExam = (examId: string) => {
-    // TODO: Navigate to exam details page
     toast({
       title: 'Feature Coming Soon',
       description: 'Exam details view will be implemented',
@@ -89,7 +87,6 @@ const AllExamsPage = () => {
   };
 
   const handleEditExam = (examId: string) => {
-    // TODO: Navigate to exam edit page
     toast({
       title: 'Feature Coming Soon',
       description: 'Exam editing will be implemented',
@@ -156,11 +153,11 @@ const AllExamsPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6 w-full max-w-full">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">All Exams</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">All Exams</h1>
             <p className="text-gray-600">Manage and monitor all examination activities</p>
           </div>
           <CreateExamModal />
@@ -202,99 +199,101 @@ const AllExamsPage = () => {
         </div>
 
         {/* Exams Table */}
-        <Card>
+        <Card className="w-full max-w-full">
           <CardHeader>
             <CardTitle>All Exams ({filteredExams.length})</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Created By</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Difficulty</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Candidates</TableHead>
-                  <TableHead>Completed</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredExams.map((exam) => (
-                  <TableRow key={exam.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{exam.title}</div>
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
-                          {exam.description}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{exam.createdBy}</TableCell>
-                    <TableCell>{getStatusBadge(exam.status)}</TableCell>
-                    <TableCell>{getDifficultyBadge(exam.difficulty)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4 text-gray-400" />
-                        {exam.duration}m
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4 text-gray-400" />
-                        {exam.candidates}
-                      </div>
-                    </TableCell>
-                    <TableCell>{exam.completedSubmissions}</TableCell>
-                    <TableCell>
-                      {new Date(exam.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewExam(exam.id)}>
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditExam(exam.id)}>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleToggleExamStatus(exam)}>
-                            {exam.status === 'active' ? (
-                              <>
-                                <Square className="w-4 h-4 mr-2" />
-                                Deactivate
-                              </>
-                            ) : (
-                              <>
-                                <Play className="w-4 h-4 mr-2" />
-                                Activate
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => handleDeleteExam(exam.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          <CardContent className="p-0">
+            <div className="w-full overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[200px]">Title</TableHead>
+                    <TableHead className="min-w-[120px] hidden md:table-cell">Created By</TableHead>
+                    <TableHead className="min-w-[100px]">Status</TableHead>
+                    <TableHead className="min-w-[100px] hidden lg:table-cell">Difficulty</TableHead>
+                    <TableHead className="min-w-[100px] hidden sm:table-cell">Duration</TableHead>
+                    <TableHead className="min-w-[100px]">Candidates</TableHead>
+                    <TableHead className="min-w-[100px] hidden lg:table-cell">Completed</TableHead>
+                    <TableHead className="min-w-[100px] hidden md:table-cell">Created</TableHead>
+                    <TableHead className="w-[80px]">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredExams.map((exam) => (
+                    <TableRow key={exam.id}>
+                      <TableCell>
+                        <div className="max-w-[200px]">
+                          <div className="font-medium truncate">{exam.title}</div>
+                          <div className="text-sm text-gray-500 truncate">
+                            {exam.description}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">{exam.createdBy}</TableCell>
+                      <TableCell>{getStatusBadge(exam.status)}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{getDifficultyBadge(exam.difficulty)}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4 text-gray-400" />
+                          {exam.duration}m
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Users className="w-4 h-4 text-gray-400" />
+                          {exam.candidates}
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">{exam.completedSubmissions}</TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {new Date(exam.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleViewExam(exam.id)}>
+                              <Eye className="w-4 h-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditExam(exam.id)}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleExamStatus(exam)}>
+                              {exam.status === 'active' ? (
+                                <>
+                                  <Square className="w-4 h-4 mr-2" />
+                                  Deactivate
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-4 h-4 mr-2" />
+                                  Activate
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteExam(exam.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>
