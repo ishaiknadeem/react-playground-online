@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 
 interface PreviewProps {
@@ -105,17 +104,18 @@ const Preview: React.FC<PreviewProps> = ({
               <span>JavaScript Logic Execution Results</span>
             </div>
             <div id="results" class="results-output">
-              <div class="result-item result-log">🚀 Initializing JavaScript Logic Compiler...</div>
+              <div class="result-item result-log">🚀 Starting JavaScript execution...</div>
             </div>
           </div>
           
           <script>
             // Override console methods to capture output and display results
             const originalConsole = window.console;
-            const results = [];
+            const results = [{ type: 'log', message: '🚀 Starting JavaScript execution...', timestamp: Date.now() }];
             
             function addResult(type, message) {
-              results.push({ type, message, timestamp: Date.now() });
+              const timestamp = Date.now();
+              results.push({ type, message, timestamp });
               updateResults();
               
               // Send to parent for console panel
@@ -168,8 +168,16 @@ const Preview: React.FC<PreviewProps> = ({
               }
             }
 
-            // Add initial message
-            addResult('log', '🚀 Starting JavaScript execution...');
+            // Error handling
+            window.addEventListener('error', (event) => {
+              const message = \`Error: \${event.message} at line \${event.lineno}\`;
+              addResult('error', message);
+            });
+
+            window.addEventListener('unhandledrejection', (event) => {
+              const message = \`Unhandled Promise Rejection: \${event.reason}\`;
+              addResult('error', message);
+            });
 
             // Execute JavaScript logic code
             try {
@@ -177,7 +185,9 @@ const Preview: React.FC<PreviewProps> = ({
               console.log('✅ JavaScript execution completed successfully!');
             } catch (error) {
               console.error('❌ JavaScript Error:', error.message);
-              console.error('Stack trace:', error.stack);
+              if (error.stack) {
+                console.error('Stack trace:', error.stack);
+              }
             }
           </script>
         </body>

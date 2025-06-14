@@ -485,7 +485,10 @@ const CodeEditor = () => {
 
   const runCode = useCallback(() => {
     setIsRunning(true);
-    setConsoleOutput([]);
+    // Only clear console output for React and Vanilla modes, not Logic mode
+    if (compilerMode !== 'logic') {
+      setConsoleOutput([]);
+    }
     setPreviewKey(prev => prev + 1);
     
     setTimeout(() => {
