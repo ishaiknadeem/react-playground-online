@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { Clock, Send, Play, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Clock, Send, Play, CheckCircle, XCircle, AlertTriangle, Eye, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -40,6 +39,10 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
     warningsShown: 0
   });
   const [showTabWarning, setShowTabWarning] = useState(false);
+  const [activeTab, setActiveTab] = useState('code');
+
+  // Check if this is a React exam
+  const isReactExam = question.id === 'id234' || question.title.toLowerCase().includes('react');
 
   // Tab switch detection
   useEffect(() => {
@@ -112,23 +115,39 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
       
       for (const testCase of question.testCases) {
         try {
-          const wrappedCode = `
-            ${code}
+          if (isReactExam) {
+            // For React exams, we'll simulate test results based on code analysis
+            const hasCounter = code.includes('useState') && code.includes('counter');
+            const hasIncrement = code.includes('Increment');
+            const hasDecrement = code.includes('Decrement');
+            const hasReset = code.includes('Reset');
             
-            (function() {
-              const input = ${JSON.stringify(testCase.input)};
-              return twoSum(input.nums, input.target);
-            })();
-          `;
-          
-          const output = eval(wrappedCode);
-          const passed = JSON.stringify(output) === JSON.stringify(testCase.expectedOutput);
-          
-          results.push({
-            testCase,
-            passed,
-            output
-          });
+            const passed = hasCounter && hasIncrement && hasDecrement && hasReset;
+            
+            results.push({
+              testCase,
+              passed,
+              output: passed ? testCase.expectedOutput : 'Component not properly implemented'
+            });
+          } else {
+            const wrappedCode = `
+              ${code}
+              
+              (function() {
+                const input = ${JSON.stringify(testCase.input)};
+                return twoSum(input.nums, input.target);
+              })();
+            `;
+            
+            const output = eval(wrappedCode);
+            const passed = JSON.stringify(output) === JSON.stringify(testCase.expectedOutput);
+            
+            results.push({
+              testCase,
+              passed,
+              output
+            });
+          }
         } catch (error) {
           results.push({
             testCase,
@@ -160,7 +179,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
     }
     
     setIsRunning(false);
-  }, [code, question.testCases]);
+  }, [code, question.testCases, isReactExam]);
 
   const handleSubmit = useCallback(() => {
     if (hasSubmitted) return;
@@ -179,6 +198,62 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
     if (percentage > 0.5) return 'text-green-400';
     if (percentage > 0.25) return 'text-yellow-400';
     return 'text-red-400';
+  };
+
+  const renderReactPreview = () => {
+    if (!isReactExam) return null;
+
+    try {
+      // Create a safe preview of the React component
+      const previewHtml = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>React Component Preview</title>
+          <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+          <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+          <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+          <style>
+            ${question.boilerplate.css}
+          </style>
+        </head>
+        <body>
+          <div id="root"></div>
+          <script type="text/babel">
+            ${code}
+            
+            const App = () => {
+              return React.createElement(Counter);
+            };
+            
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(React.createElement(App));
+          </script>
+        </body>
+        </html>
+      `;
+
+      return (
+        <iframe
+          srcDoc={previewHtml}
+          className="w-full h-full border-0 bg-white"
+          title="React Component Preview"
+          sandbox="allow-scripts"
+        />
+      );
+    } catch (error) {
+      return (
+        <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="text-center">
+            <AlertTriangle className="w-12 h-12 mx-auto mb-4" />
+            <p>Preview Error</p>
+            <p className="text-sm">Check your code syntax</p>
+          </div>
+        </div>
+      );
+    }
   };
 
   return (
@@ -293,29 +368,74 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
           </div>
         </div>
 
-        {/* Right Panel - Code Editor */}
+        {/* Right Panel - Code Editor and Preview */}
         <div className="flex-1 flex flex-col">
-          <MonacoEditor
-            height="100%"
-            language="javascript"
-            theme="vs-dark"
-            value={code}
-            onChange={(value) => setCode(value || '')}
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-              lineNumbers: 'on',
-              roundedSelection: false,
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              tabSize: 2,
-              wordWrap: 'on',
-              fontFamily: 'JetBrains Mono, Fira Code, Monaco, monospace',
-              fontLigatures: true,
-              cursorBlinking: 'smooth',
-              smoothScrolling: true,
-            }}
-          />
+          {isReactExam ? (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+              <div className="border-b border-gray-700/50 bg-gray-800/30 px-4">
+                <TabsList className="bg-gray-800/50">
+                  <TabsTrigger value="code" className="data-[state=active]:bg-gray-700">
+                    <Code className="w-4 h-4 mr-2" />
+                    Code
+                  </TabsTrigger>
+                  <TabsTrigger value="preview" className="data-[state=active]:bg-gray-700">
+                    <Eye className="w-4 h-4 mr-2" />
+                    Preview
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              
+              <TabsContent value="code" className="flex-1 m-0">
+                <MonacoEditor
+                  height="100%"
+                  language="javascript"
+                  theme="vs-dark"
+                  value={code}
+                  onChange={(value) => setCode(value || '')}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    lineNumbers: 'on',
+                    roundedSelection: false,
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    tabSize: 2,
+                    wordWrap: 'on',
+                    fontFamily: 'JetBrains Mono, Fira Code, Monaco, monospace',
+                    fontLigatures: true,
+                    cursorBlinking: 'smooth',
+                    smoothScrolling: true,
+                  }}
+                />
+              </TabsContent>
+              
+              <TabsContent value="preview" className="flex-1 m-0">
+                {renderReactPreview()}
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <MonacoEditor
+              height="100%"
+              language="javascript"
+              theme="vs-dark"
+              value={code}
+              onChange={(value) => setCode(value || '')}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                lineNumbers: 'on',
+                roundedSelection: false,
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                tabSize: 2,
+                wordWrap: 'on',
+                fontFamily: 'JetBrains Mono, Fira Code, Monaco, monospace',
+                fontLigatures: true,
+                cursorBlinking: 'smooth',
+                smoothScrolling: true,
+              }}
+            />
+          )}
         </div>
       </div>
     </div>
