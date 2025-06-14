@@ -4,7 +4,6 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import ExamInterface from '@/components/exam/ExamInterface';
-import RelatedProblems from '@/components/practice/RelatedProblems';
 import { practiceApi } from '@/services/practiceApi';
 import { useQuery } from '@tanstack/react-query';
 
@@ -14,7 +13,6 @@ const PracticeProblem = () => {
   const pathId = searchParams.get('path');
   const navigate = useNavigate();
   const [startTime] = useState<Date>(new Date());
-  const [showRelated, setShowRelated] = useState(false);
 
   const { data: question, isLoading, error } = useQuery({
     queryKey: ['practice-question', problemId],
@@ -22,47 +20,12 @@ const PracticeProblem = () => {
     enabled: !!problemId,
   });
 
-  const { data: allQuestions = [] } = useQuery({
-    queryKey: ['practice-questions'],
-    queryFn: practiceApi.getQuestions,
-  });
-
-  // Generate related problems based on tags and category
-  const relatedProblems = React.useMemo(() => {
-    if (!question || !allQuestions.length) return [];
-    
-    return allQuestions
-      .filter(q => q.id !== problemId)
-      .map(q => {
-        // Calculate similarity score based on shared tags and category
-        const sharedTags = q.tags.filter(tag => question.tags.includes(tag)).length;
-        const categoryMatch = q.category === question.category ? 30 : 0;
-        const tagScore = (sharedTags / Math.max(question.tags.length, q.tags.length)) * 70;
-        const similarityScore = Math.round(categoryMatch + tagScore);
-        
-        return {
-          id: q.id,
-          title: q.title,
-          difficulty: q.difficulty,
-          category: q.category,
-          similarityScore,
-          solved: q.solved || false,
-          timeEstimate: q.timeEstimate,
-          tags: q.tags
-        };
-      })
-      .filter(q => q.similarityScore > 20)
-      .sort((a, b) => b.similarityScore - a.similarityScore)
-      .slice(0, 5);
-  }, [question, allQuestions, problemId]);
-
   const handleSubmit = async (code: any, testResults: any, tabSwitchData: any) => {
     console.log('Practice submission:', { problemId, code, testResults, tabSwitchData });
     
     if (problemId && code.javascript) {
       try {
         await practiceApi.submitSolution(problemId, code.javascript, 'javascript');
-        setShowRelated(true); // Show related problems after submission
       } catch (error) {
         console.error('Failed to submit solution:', error);
       }
@@ -75,10 +38,6 @@ const PracticeProblem = () => {
     } else {
       navigate('/practice');
     }
-  };
-
-  const handleRelatedProblemClick = (relatedProblemId: string) => {
-    navigate(`/practice/problem?id=${relatedProblemId}`);
   };
 
   if (isLoading) {
@@ -143,17 +102,6 @@ const PracticeProblem = () => {
         startTime={startTime}
         onSubmit={handleSubmit}
       />
-      
-      {/* Related Problems - shown after submission or can be toggled */}
-      {(showRelated || relatedProblems.length > 0) && (
-        <div className="fixed bottom-4 right-4 w-96 max-h-96 overflow-y-auto z-40">
-          <RelatedProblems
-            currentProblemId={problemId}
-            relatedProblems={relatedProblems}
-            onProblemClick={handleRelatedProblemClick}
-          />
-        </div>
-      )}
     </div>
   );
 };
