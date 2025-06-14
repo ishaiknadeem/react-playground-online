@@ -534,122 +534,105 @@ const CodeEditor = () => {
 
   const getModeIcon = (mode: CompilerMode) => {
     switch (mode) {
-      case 'react': return <Zap className="w-4 h-4 text-blue-400" />;
-      case 'vanilla': return <Code className="w-4 h-4 text-green-400" />;
-      case 'logic': return <Cpu className="w-4 h-4 text-purple-400" />;
+      case 'react': return <Zap className="w-4 h-4" />;
+      case 'vanilla': return <Code className="w-4 h-4" />;
+      case 'logic': return <Cpu className="w-4 h-4" />;
     }
   };
 
   const getModeColor = (mode: CompilerMode) => {
     switch (mode) {
-      case 'react': return 'bg-blue-600 text-white';
-      case 'vanilla': return 'bg-green-600 text-white';
-      case 'logic': return 'bg-purple-600 text-white';
+      case 'react': return 'text-blue-400';
+      case 'vanilla': return 'text-green-400';
+      case 'logic': return 'text-purple-400';
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      {/* Modern Header */}
-      <div className="border-b border-gray-700/50 bg-gray-800/90 backdrop-blur-sm px-6 py-4 shadow-lg">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-                <Code2 className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  Code Playground
-                </h1>
-                <p className="text-xs text-gray-400">Build, compile, and preview</p>
-              </div>
+      {/* Minimal Header */}
+      <div className="border-b border-gray-700/30 bg-gray-900/80 backdrop-blur-md px-4 py-3">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          {/* Left Section - Logo & Mode */}
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Code2 className="w-6 h-6 text-blue-400" />
+              <span className="text-lg font-semibold text-white">Playground</span>
             </div>
             
-            {/* Mode Selector */}
-            <div className="flex items-center space-x-3 bg-gray-700/50 rounded-lg px-4 py-2 border border-gray-600/50">
-              <Label className="text-sm font-medium text-gray-300 flex items-center space-x-2">
+            <div className="h-4 w-px bg-gray-600"></div>
+            
+            <div className="flex items-center space-x-2">
+              <div className={`flex items-center space-x-1 ${getModeColor(compilerMode)}`}>
                 {getModeIcon(compilerMode)}
-                <span>Mode:</span>
-              </Label>
+                <span className="text-sm font-medium">
+                  {compilerMode === 'react' ? 'React' : 
+                   compilerMode === 'vanilla' ? 'Vanilla' : 'Logic'}
+                </span>
+              </div>
+              
               <Select value={compilerMode} onValueChange={changeMode}>
-                <SelectTrigger className="w-40 bg-gray-600 border-gray-500 text-white">
+                <SelectTrigger className="w-20 h-7 bg-transparent border-gray-600 text-gray-300 text-xs">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-700 border-gray-600">
-                  <SelectItem value="react" className="text-white hover:bg-gray-600">
-                    <div className="flex items-center space-x-2">
-                      <Zap className="w-4 h-4 text-blue-400" />
-                      <span>React</span>
-                    </div>
+                <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectItem value="react" className="text-white hover:bg-gray-700">
+                    React
                   </SelectItem>
-                  <SelectItem value="vanilla" className="text-white hover:bg-gray-600">
-                    <div className="flex items-center space-x-2">
-                      <Code className="w-4 h-4 text-green-400" />
-                      <span>Vanilla JS</span>
-                    </div>
+                  <SelectItem value="vanilla" className="text-white hover:bg-gray-700">
+                    Vanilla
                   </SelectItem>
-                  <SelectItem value="logic" className="text-white hover:bg-gray-600">
-                    <div className="flex items-center space-x-2">
-                      <Cpu className="w-4 h-4 text-purple-400" />
-                      <span>JS Logic</span>
-                    </div>
+                  <SelectItem value="logic" className="text-white hover:bg-gray-700">
+                    Logic
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
-            <Badge 
-              variant="secondary" 
-              className={`${getModeColor(compilerMode)} border-0`}
-            >
-              {compilerMode === 'react' ? 'React Mode' : 
-               compilerMode === 'vanilla' ? 'Vanilla JS Mode' : 'JS Logic Mode'}
-            </Badge>
           </div>
           
+          {/* Right Section - Actions */}
           <div className="flex items-center space-x-2">
             <Button
-              onClick={runCode}
-              disabled={isRunning}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-0 shadow-lg"
+              onClick={resetCode}
+              variant="ghost"
               size="sm"
+              className="h-8 px-3 text-gray-400 hover:text-white hover:bg-gray-700/50"
             >
-              <Play className="w-4 h-4 mr-2" />
-              {isRunning ? 'Compiling...' : 'Run Code'}
+              <RotateCcw className="w-4 h-4 mr-1" />
+              Reset
             </Button>
             
             <Button
-              onClick={resetCode}
-              variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+              onClick={runCode}
+              disabled={isRunning}
               size="sm"
+              className="h-8 px-4 bg-green-600 hover:bg-green-700 text-white border-0"
             >
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Reset
+              <Play className="w-4 h-4 mr-1" />
+              {isRunning ? 'Running...' : 'Run'}
             </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex h-[calc(100vh-85px)]">
+      <div className="flex h-[calc(100vh-65px)]">
         {/* Left Panel - Code Editor */}
         <div className="w-1/2 border-r border-gray-700/50 flex flex-col bg-gray-900/50">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as keyof FileContent)} className="flex-1 flex flex-col">
-            <TabsList className="bg-gray-800/70 border-b border-gray-700/50 rounded-none justify-start p-0 h-auto backdrop-blur-sm">
+            <TabsList className="bg-gray-800/50 border-b border-gray-700/30 rounded-none justify-start p-0 h-auto">
               {Object.keys(files).map((fileType) => (
                 <TabsTrigger
                   key={fileType}
                   value={fileType}
-                  className="data-[state=active]:bg-gray-700/70 data-[state=active]:text-white rounded-none border-r border-gray-700/50 px-6 py-3 flex items-center space-x-2 hover:bg-gray-700/30 transition-colors"
+                  className="data-[state=active]:bg-gray-700/50 data-[state=active]:text-white rounded-none border-r border-gray-700/30 px-4 py-2.5 flex items-center space-x-2 hover:bg-gray-700/30 transition-colors text-sm"
                 >
                   {getFileIcon(fileType as keyof FileContent)}
                   <span className="capitalize font-medium">
                     {fileType === 'javascript' ? 
-                      (compilerMode === 'react' ? 'React/JSX' : 
-                       compilerMode === 'vanilla' ? 'JavaScript' : 'JS Logic') : 
-                      fileType}
+                      (compilerMode === 'react' ? 'JSX' : 
+                       compilerMode === 'vanilla' ? 'JS' : 'Logic') : 
+                      fileType.toUpperCase()}
                   </span>
                 </TabsTrigger>
               ))}
