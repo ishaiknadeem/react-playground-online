@@ -155,32 +155,47 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const examinerApi = {
   getAll: async (): Promise<Examiner[]> => {
+    console.log('API: Fetching all examiners...');
+    await delay(500);
+    
     try {
-      await delay(500);
       // TODO: Replace with actual API call
-      // const response = await fetch('/api/examiners');
+      // const response = await fetch('/api/examiners', {
+      //   method: 'GET',
+      //   headers: { 'Content-Type': 'application/json' }
+      // });
+      // if (!response.ok) throw new Error('Failed to fetch examiners');
       // return response.json();
+      
+      console.log('API: Returning mock examiners data');
       return MOCK_EXAMINERS;
     } catch (error) {
-      console.error('Failed to fetch examiners:', error);
-      return MOCK_EXAMINERS; // Fallback to dummy data
+      console.error('API: Failed to fetch examiners, returning fallback data:', error);
+      return MOCK_EXAMINERS;
     }
   },
 
   create: async (examiner: Omit<Examiner, 'id'>): Promise<Examiner> => {
+    console.log('API: Creating new examiner:', examiner);
+    await delay(300);
+    
     try {
-      await delay(300);
       // TODO: Replace with actual API call
       // const response = await fetch('/api/examiners', {
       //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
       //   body: JSON.stringify(examiner)
       // });
-      // return response.json();
+      // if (!response.ok) throw new Error('Failed to create examiner');
+      // const newExaminer = await response.json();
+      
+      // Simulate API response
       const newExaminer = { ...examiner, id: Date.now().toString() };
       MOCK_EXAMINERS.push(newExaminer);
+      console.log('API: Examiner created successfully:', newExaminer);
       return newExaminer;
     } catch (error) {
-      console.error('Failed to create examiner:', error);
+      console.error('API: Failed to create examiner:', error);
       throw error;
     }
   }
@@ -188,60 +203,93 @@ export const examinerApi = {
 
 export const candidateApi = {
   getAll: async (): Promise<Candidate[]> => {
+    console.log('API: Fetching all candidates...');
+    await delay(400);
+    
     try {
-      await delay(400);
       // TODO: Replace with actual API call
-      // const response = await fetch('/api/candidates');
+      // const response = await fetch('/api/candidates', {
+      //   method: 'GET',
+      //   headers: { 'Content-Type': 'application/json' }
+      // });
+      // if (!response.ok) throw new Error('Failed to fetch candidates');
       // return response.json();
+      
+      console.log('API: Returning mock candidates data');
       return MOCK_CANDIDATES;
     } catch (error) {
-      console.error('Failed to fetch candidates:', error);
-      return MOCK_CANDIDATES; // Fallback to dummy data
+      console.error('API: Failed to fetch candidates, returning fallback data:', error);
+      return MOCK_CANDIDATES;
     }
   }
 };
 
 export const examApi = {
   getAll: async (): Promise<ExamDetails[]> => {
+    console.log('API: Fetching all exams...');
+    await delay(600);
+    
     try {
-      await delay(600);
       // TODO: Replace with actual API call
-      // const response = await fetch('/api/exams');
+      // const response = await fetch('/api/exams', {
+      //   method: 'GET',
+      //   headers: { 'Content-Type': 'application/json' }
+      // });
+      // if (!response.ok) throw new Error('Failed to fetch exams');
       // return response.json();
+      
+      console.log('API: Returning mock exams data');
       return MOCK_EXAMS;
     } catch (error) {
-      console.error('Failed to fetch exams:', error);
-      return MOCK_EXAMS; // Fallback to dummy data
+      console.error('API: Failed to fetch exams, returning fallback data:', error);
+      return MOCK_EXAMS;
     }
   },
 
   getByExaminer: async (examinerId: string): Promise<ExamDetails[]> => {
+    console.log('API: Fetching exams by examiner:', examinerId);
+    await delay(500);
+    
     try {
-      await delay(500);
       // TODO: Replace with actual API call
-      // const response = await fetch(`/api/exams?examiner=${examinerId}`);
+      // const response = await fetch(`/api/exams?examiner=${examinerId}`, {
+      //   method: 'GET',
+      //   headers: { 'Content-Type': 'application/json' }
+      // });
+      // if (!response.ok) throw new Error('Failed to fetch examiner exams');
       // return response.json();
-      return MOCK_EXAMS.filter(exam => exam.createdBy === 'Current User');
+      
+      // Filter for current user's exams
+      const userExams = MOCK_EXAMS.filter(exam => exam.createdBy === 'Current User');
+      console.log('API: Returning filtered exams for current user:', userExams);
+      return userExams;
     } catch (error) {
-      console.error('Failed to fetch examiner exams:', error);
-      return MOCK_EXAMS.slice(0, 2); // Fallback to subset of dummy data
+      console.error('API: Failed to fetch examiner exams, returning fallback data:', error);
+      return MOCK_EXAMS.slice(0, 2);
     }
   },
 
   create: async (exam: Omit<ExamDetails, 'id'>): Promise<ExamDetails> => {
+    console.log('API: Creating new exam:', exam);
+    await delay(400);
+    
     try {
-      await delay(400);
       // TODO: Replace with actual API call
       // const response = await fetch('/api/exams', {
       //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
       //   body: JSON.stringify(exam)
       // });
-      // return response.json();
+      // if (!response.ok) throw new Error('Failed to create exam');
+      // const newExam = await response.json();
+      
+      // Simulate API response
       const newExam = { ...exam, id: Date.now().toString() };
       MOCK_EXAMS.push(newExam);
+      console.log('API: Exam created successfully:', newExam);
       return newExam;
     } catch (error) {
-      console.error('Failed to create exam:', error);
+      console.error('API: Failed to create exam:', error);
       throw error;
     }
   }
