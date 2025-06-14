@@ -663,11 +663,9 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
                 
                 console.log('🔄 Running user JavaScript...');
                 
-                // Execute the user's JavaScript code in global scope
-                // This ensures functions like increment, decrement, reset are available globally
-                (function() {
-                  eval(userCode);
-                }).call(window);
+                // Execute user code directly in global scope using window.eval
+                // This ensures functions are properly exposed to the global window object
+                window.eval(userCode);
                 
                 console.log('✅ JavaScript execution completed successfully!');
                 
