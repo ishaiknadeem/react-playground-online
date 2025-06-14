@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Code2, Clock, Trophy, Search, Filter, Play, Star, TrendingUp, LogOut, User, Target, Zap, Award, Calendar, Heart, Timer, BookOpen, Users } from 'lucide-react';
+import { Code2, Clock, Trophy, Search, Play, Star, TrendingUp, LogOut, User, Target, Zap, Award, Calendar, Heart, Timer, BookOpen, Users } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { practiceApi, PracticeQuestion, UserProgress } from '@/services/practiceApi';
 import { useQuery } from '@tanstack/react-query';
@@ -19,7 +20,6 @@ const Practice = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [companyFilter, setCompanyFilter] = useState('all');
   const [sortBy, setSortBy] = useState('popularity');
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
@@ -68,7 +68,7 @@ const Practice = () => {
   const learningPaths: LearningPath[] = [
     {
       id: 'arrays-basics',
-      title: 'Arrays & Strings Fundamentals',
+      title: 'Arrays & Strings',
       description: 'Master the basics of arrays and string manipulation',
       difficulty: 'Beginner',
       estimatedTime: '2-3 weeks',
@@ -78,7 +78,7 @@ const Practice = () => {
     },
     {
       id: 'dynamic-programming',
-      title: 'Dynamic Programming Mastery',
+      title: 'Dynamic Programming',
       description: 'Learn to solve complex optimization problems',
       difficulty: 'Advanced',
       estimatedTime: '4-6 weeks',
@@ -95,10 +95,8 @@ const Practice = () => {
                            question.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesDifficulty = difficultyFilter === 'all' || question.difficulty === difficultyFilter;
       const matchesCategory = categoryFilter === 'all' || question.category === categoryFilter;
-      const matchesCompany = companyFilter === 'all' || 
-                            (question.companies && question.companies.includes(companyFilter));
       
-      return matchesSearch && matchesDifficulty && matchesCategory && matchesCompany;
+      return matchesSearch && matchesDifficulty && matchesCategory;
     });
 
     // Sort questions
@@ -109,8 +107,6 @@ const Practice = () => {
         case 'difficulty':
           const diffOrder = { 'Easy': 1, 'Medium': 2, 'Hard': 3 };
           return diffOrder[a.difficulty] - diffOrder[b.difficulty];
-        case 'acceptance':
-          return (b.acceptance || 0) - (a.acceptance || 0);
         case 'popularity':
         default:
           return (b.likes || 0) - (a.likes || 0);
@@ -118,24 +114,19 @@ const Practice = () => {
     });
 
     return filtered;
-  }, [questions, searchTerm, difficultyFilter, categoryFilter, companyFilter, sortBy]);
+  }, [questions, searchTerm, difficultyFilter, categoryFilter, sortBy]);
 
   const categories = React.useMemo(() => {
     const cats = new Set(questions.map(q => q.category));
     return Array.from(cats);
   }, [questions]);
 
-  const companies = React.useMemo(() => {
-    const comps = new Set(questions.flatMap(q => q.companies || []));
-    return Array.from(comps);
-  }, [questions]);
-
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'Easy': return 'bg-green-100 text-green-800 border-green-200';
-      case 'Medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Hard': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'Easy': return 'text-emerald-600 bg-emerald-50 border border-emerald-200';
+      case 'Medium': return 'text-amber-600 bg-amber-50 border border-amber-200';
+      case 'Hard': return 'text-red-600 bg-red-50 border border-red-200';
+      default: return 'text-gray-600 bg-gray-50 border border-gray-200';
     }
   };
 
@@ -158,51 +149,45 @@ const Practice = () => {
 
   const handleStartInterviewSession = (sessionId: string, config: any) => {
     console.log('Starting interview session:', sessionId, config);
-    // In a real implementation, this would start a timed interview session
     navigate('/practice/interview-session', { state: { sessionId, config } });
   };
 
   if (questionsLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading practice questions...</p>
+          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading practice questions...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Minimal Header */}
+      <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-6">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <Code2 className="w-8 h-8 text-blue-600" />
-              <h1 className="text-xl font-bold text-gray-900">CodePractice</h1>
-              <Badge variant="outline" className="hidden md:flex">
-                Practice Platform
-              </Badge>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <Code2 className="w-6 h-6 text-blue-600" />
+                <span className="text-lg font-semibold text-slate-900">Practice</span>
+              </div>
             </div>
             
             <div className="flex items-center space-x-4">
-              <div className="hidden md:flex items-center space-x-4">
-                <div className="flex items-center space-x-2 text-sm">
+              <div className="hidden md:flex items-center space-x-4 text-sm text-slate-600">
+                <div className="flex items-center space-x-1">
                   <Zap className="w-4 h-4 text-orange-500" />
-                  <span className="font-medium">{userProgress?.streak || 0} day streak</span>
+                  <span>{userProgress?.streak || 0}</span>
                 </div>
-                <div className="flex items-center space-x-2 text-sm">
-                  <Award className="w-4 h-4 text-purple-500" />
-                  <span>{userProgress?.totalSolved || 0} solved</span>
+                <div className="flex items-center space-x-1">
+                  <Trophy className="w-4 h-4 text-emerald-500" />
+                  <span>{userProgress?.totalSolved || 0}</span>
                 </div>
               </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <User className="w-4 h-4" />
-                <span className="hidden sm:inline">{user?.name}</span>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-600">
                 <LogOut className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Logout</span>
               </Button>
@@ -211,182 +196,152 @@ const Practice = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <Tabs defaultValue="problems" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
-            <TabsTrigger value="problems">Problems</TabsTrigger>
-            <TabsTrigger value="paths">Learning Paths</TabsTrigger>
-            <TabsTrigger value="interview">Interview Prep</TabsTrigger>
-            <TabsTrigger value="progress">Progress</TabsTrigger>
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <Tabs defaultValue="problems" className="space-y-8">
+          <TabsList className="grid w-full grid-cols-4 max-w-md mx-auto bg-white/60 backdrop-blur-sm">
+            <TabsTrigger value="problems" className="text-sm">Problems</TabsTrigger>
+            <TabsTrigger value="paths" className="text-sm">Paths</TabsTrigger>
+            <TabsTrigger value="interview" className="text-sm">Interview</TabsTrigger>
+            <TabsTrigger value="progress" className="text-sm">Progress</TabsTrigger>
           </TabsList>
 
           <TabsContent value="problems" className="space-y-6">
-            {/* Achievements Section */}
-            <AchievementBadges achievements={achievements} />
-
-            {/* Filters Section */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex flex-col lg:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <Input
-                        placeholder="Search problems, tags, or companies..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-                      <SelectTrigger className="w-full sm:w-48">
-                        <SelectValue placeholder="Difficulty" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Difficulties</SelectItem>
-                        <SelectItem value="Easy">Easy</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="Hard">Hard</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="w-full sm:w-48">
-                        <SelectValue placeholder="Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {categories.map(category => (
-                          <SelectItem key={category} value={category}>{category}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select value={companyFilter} onValueChange={setCompanyFilter}>
-                      <SelectTrigger className="w-full sm:w-48">
-                        <SelectValue placeholder="Company" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Companies</SelectItem>
-                        {companies.map(company => (
-                          <SelectItem key={company} value={company}>{company}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select value={sortBy} onValueChange={setSortBy}>
-                      <SelectTrigger className="w-full sm:w-48">
-                        <SelectValue placeholder="Sort by" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="popularity">Popularity</SelectItem>
-                        <SelectItem value="title">Title</SelectItem>
-                        <SelectItem value="difficulty">Difficulty</SelectItem>
-                        <SelectItem value="acceptance">Acceptance</SelectItem>
-                      </SelectContent>
-                    </Select>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center space-x-2">
+                  <Trophy className="w-5 h-5 text-emerald-500" />
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900">{userProgress?.totalSolved || 0}</p>
+                    <p className="text-xs text-slate-600">Solved</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center space-x-2">
+                  <Zap className="w-5 h-5 text-orange-500" />
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900">{userProgress?.streak || 0}</p>
+                    <p className="text-xs text-slate-600">Day Streak</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center space-x-2">
+                  <Target className="w-5 h-5 text-blue-500" />
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900">{questions.length}</p>
+                    <p className="text-xs text-slate-600">Available</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center space-x-2">
+                  <Clock className="w-5 h-5 text-purple-500" />
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900">{userProgress?.practiceTime || '0h'}</p>
+                    <p className="text-xs text-slate-600">Practice Time</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Search and Filters */}
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <Input
+                      placeholder="Search problems..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 bg-white/80 border-slate-200"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex gap-3">
+                  <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+                    <SelectTrigger className="w-32 bg-white/80">
+                      <SelectValue placeholder="Difficulty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="Easy">Easy</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="Hard">Hard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger className="w-40 bg-white/80">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {categories.map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
 
             {/* Problems List */}
-            <div className="grid gap-4">
+            <div className="space-y-3">
               {filteredAndSortedQuestions.map((question) => (
-                <Card key={question.id} className="hover:shadow-md transition-all duration-200 hover:scale-[1.01]">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-3 mb-3">
-                          <h3 className="text-lg font-semibold text-gray-900 truncate">{question.title}</h3>
-                          <Badge className={getDifficultyColor(question.difficulty)}>
-                            {question.difficulty}
+                <div key={question.id} className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/80 transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <h3 className="text-lg font-medium text-slate-900 truncate">{question.title}</h3>
+                        <Badge className={`${getDifficultyColor(question.difficulty)} text-xs px-2 py-1`}>
+                          {question.difficulty}
+                        </Badge>
+                        {question.solved && (
+                          <Badge className="text-emerald-600 bg-emerald-50 border border-emerald-200 text-xs">
+                            ✓ Solved
                           </Badge>
-                          <Badge variant="outline">{question.category}</Badge>
-                          {question.solved && (
-                            <Badge className="bg-green-100 text-green-800 border-green-200">
-                              ✓ Solved
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        <p className="text-gray-600 mb-3 line-clamp-2">{question.description.split('\n')[0]}</p>
-                        
-                        <div className="flex items-center space-x-6 text-sm text-gray-500 mb-3">
-                          <div className="flex items-center space-x-1">
-                            <Clock className="w-4 h-4" />
-                            <span>~{question.timeEstimate} min</span>
-                          </div>
-                          {question.acceptance && (
-                            <div className="flex items-center space-x-1">
-                              <Target className="w-4 h-4" />
-                              <span>{question.acceptance}% acceptance</span>
-                            </div>
-                          )}
-                          {question.likes && (
-                            <div className="flex items-center space-x-1">
-                              <Heart className="w-4 h-4" />
-                              <span>{question.likes.toLocaleString()}</span>
-                            </div>
-                          )}
-                          {question.attempts && (
-                            <div>
-                              <span>Attempts: {question.attempts}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {question.tags.map(tag => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-
-                        {question.companies && question.companies.length > 0 && (
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-500">Asked by:</span>
-                            <div className="flex flex-wrap gap-1">
-                              {question.companies.slice(0, 3).map(company => (
-                                <Badge key={company} variant="outline" className="text-xs">
-                                  {company}
-                                </Badge>
-                              ))}
-                              {question.companies.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{question.companies.length - 3} more
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
                         )}
                       </div>
                       
-                      <Button 
-                        onClick={() => handleStartProblem(question.id)}
-                        className="ml-4 shrink-0"
-                        size="sm"
-                      >
-                        <Play className="w-4 h-4 mr-2" />
-                        {question.solved ? 'Practice Again' : 'Start'}
-                      </Button>
+                      <p className="text-slate-600 mb-3 text-sm line-clamp-2">{question.description.split('\n')[0]}</p>
+                      
+                      <div className="flex items-center space-x-4 text-xs text-slate-500">
+                        <div className="flex items-center space-x-1">
+                          <Clock className="w-3 h-3" />
+                          <span>~{question.timeEstimate}m</span>
+                        </div>
+                        <span>{question.category}</span>
+                        {question.likes && (
+                          <div className="flex items-center space-x-1">
+                            <Heart className="w-3 h-3" />
+                            <span>{question.likes}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
+                    
+                    <Button 
+                      onClick={() => handleStartProblem(question.id)}
+                      size="sm"
+                      className="ml-4 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Start
+                    </Button>
+                  </div>
+                </div>
               ))}
 
               {filteredAndSortedQuestions.length === 0 && (
-                <Card>
-                  <CardContent className="p-12 text-center">
-                    <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No problems found</h3>
-                    <p className="text-gray-600">Try adjusting your search criteria or filters.</p>
-                  </CardContent>
-                </Card>
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-12 text-center border border-white/20">
+                  <Search className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">No problems found</h3>
+                  <p className="text-slate-600">Try adjusting your search criteria.</p>
+                </div>
               )}
             </div>
           </TabsContent>
@@ -400,89 +355,34 @@ const Practice = () => {
           </TabsContent>
 
           <TabsContent value="progress" className="space-y-6">
-            {/* Progress Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Problems Solved</p>
-                      <p className="text-2xl font-bold text-green-600">{userProgress?.totalSolved || 0}</p>
-                    </div>
-                    <Trophy className="w-8 h-8 text-green-600" />
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Progress Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-medium text-slate-900">Easy Problems</h3>
+                  <span className="text-sm text-slate-600">{userProgress?.easyCount || 0} solved</span>
+                </div>
+                <Progress value={(userProgress?.easyCount || 0) / questions.filter(q => q.difficulty === 'Easy').length * 100} className="h-2" />
+              </div>
               
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Current Streak</p>
-                      <p className="text-2xl font-bold text-orange-600">{userProgress?.streak || 0} days</p>
-                    </div>
-                    <Zap className="w-8 h-8 text-orange-600" />
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-medium text-slate-900">Medium Problems</h3>
+                  <span className="text-sm text-slate-600">{userProgress?.mediumCount || 0} solved</span>
+                </div>
+                <Progress value={(userProgress?.mediumCount || 0) / questions.filter(q => q.difficulty === 'Medium').length * 100} className="h-2" />
+              </div>
               
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Total Attempts</p>
-                      <p className="text-2xl font-bold text-purple-600">{userProgress?.totalAttempts || 0}</p>
-                    </div>
-                    <Star className="w-8 h-8 text-purple-600" />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Practice Time</p>
-                      <p className="text-2xl font-bold text-blue-600">{userProgress?.practiceTime || '0h'}</p>
-                    </div>
-                    <Clock className="w-8 h-8 text-blue-600" />
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-medium text-slate-900">Hard Problems</h3>
+                  <span className="text-sm text-slate-600">{userProgress?.hardCount || 0} solved</span>
+                </div>
+                <Progress value={(userProgress?.hardCount || 0) / questions.filter(q => q.difficulty === 'Hard').length * 100} className="h-2" />
+              </div>
             </div>
 
-            {/* Difficulty Breakdown */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Progress by Difficulty</CardTitle>
-                <CardDescription>Track your solving progress across different difficulty levels</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-green-600 font-medium">Easy</span>
-                      <span>{userProgress?.easyCount || 0} solved</span>
-                    </div>
-                    <Progress value={(userProgress?.easyCount || 0) / questions.filter(q => q.difficulty === 'Easy').length * 100} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-yellow-600 font-medium">Medium</span>
-                      <span>{userProgress?.mediumCount || 0} solved</span>
-                    </div>
-                    <Progress value={(userProgress?.mediumCount || 0) / questions.filter(q => q.difficulty === 'Medium').length * 100} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-red-600 font-medium">Hard</span>
-                      <span>{userProgress?.hardCount || 0} solved</span>
-                    </div>
-                    <Progress value={(userProgress?.hardCount || 0) / questions.filter(q => q.difficulty === 'Hard').length * 100} className="h-2" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <AchievementBadges achievements={achievements} />
           </TabsContent>
         </Tabs>
       </div>
