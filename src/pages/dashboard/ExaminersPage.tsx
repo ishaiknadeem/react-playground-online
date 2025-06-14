@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -101,11 +100,11 @@ const ExaminersPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Examiners</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Examiners</h1>
             <p className="text-gray-600">Manage your organization's examiners</p>
           </div>
           <AddExaminerModal />
@@ -113,7 +112,7 @@ const ExaminersPage = () => {
 
         {/* Search and Filters */}
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -133,72 +132,76 @@ const ExaminersPage = () => {
           <CardHeader>
             <CardTitle>All Examiners ({filteredExaminers.length})</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Exams Created</TableHead>
-                  <TableHead>Last Login</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredExaminers.map((examiner) => (
-                  <TableRow key={examiner.id}>
-                    <TableCell className="font-medium">{examiner.name}</TableCell>
-                    <TableCell>{examiner.email}</TableCell>
-                    <TableCell>{examiner.role}</TableCell>
-                    <TableCell>
-                      <Badge variant={examiner.status === 'active' ? 'default' : 'secondary'}>
-                        {examiner.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{examiner.examsCreated}</TableCell>
-                    <TableCell>{new Date(examiner.lastLogin).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleToggleStatus(examiner)}>
-                            {examiner.status === 'active' ? (
-                              <>
-                                <UserX className="w-4 h-4 mr-2" />
-                                Deactivate
-                              </>
-                            ) : (
-                              <>
-                                <UserCheck className="w-4 h-4 mr-2" />
-                                Activate
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => handleDeleteExaminer(examiner.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          <CardContent className="p-0">
+            <div className="overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[150px]">Name</TableHead>
+                    <TableHead className="min-w-[200px]">Email</TableHead>
+                    <TableHead className="min-w-[100px]">Role</TableHead>
+                    <TableHead className="min-w-[100px]">Status</TableHead>
+                    <TableHead className="min-w-[120px] hidden md:table-cell">Exams Created</TableHead>
+                    <TableHead className="min-w-[120px] hidden lg:table-cell">Last Login</TableHead>
+                    <TableHead className="w-[80px]">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredExaminers.map((examiner) => (
+                    <TableRow key={examiner.id}>
+                      <TableCell className="font-medium">{examiner.name}</TableCell>
+                      <TableCell>{examiner.email}</TableCell>
+                      <TableCell>{examiner.role}</TableCell>
+                      <TableCell>
+                        <Badge variant={examiner.status === 'active' ? 'default' : 'secondary'}>
+                          {examiner.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">{examiner.examsCreated}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {new Date(examiner.lastLogin).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleToggleStatus(examiner)}>
+                              {examiner.status === 'active' ? (
+                                <>
+                                  <UserX className="w-4 h-4 mr-2" />
+                                  Deactivate
+                                </>
+                              ) : (
+                                <>
+                                  <UserCheck className="w-4 h-4 mr-2" />
+                                  Activate
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteExaminer(examiner.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>

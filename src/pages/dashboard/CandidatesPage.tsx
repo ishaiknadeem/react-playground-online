@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -137,19 +136,19 @@ const CandidatesPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Candidates</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Candidates</h1>
             <p className="text-gray-600">Track candidate progress and exam results</p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={handleAddCandidate}>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <Button variant="outline" onClick={handleAddCandidate} className="w-full sm:w-auto">
               <UserPlus className="w-4 h-4 mr-2" />
               Add Candidate
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSendInvites}>
+            <Button className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto" onClick={handleSendInvites}>
               <Send className="w-4 h-4 mr-2" />
               Send Invites
             </Button>
@@ -157,8 +156,8 @@ const CandidatesPage = () => {
         </div>
 
         {/* Search and Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="md:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <Card className="lg:col-span-2">
             <CardContent className="p-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -196,70 +195,72 @@ const CandidatesPage = () => {
           <CardHeader>
             <CardTitle>All Candidates ({filteredCandidates.length})</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Exam</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Score</TableHead>
-                  <TableHead>Time Spent</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCandidates.map((candidate) => (
-                  <TableRow key={candidate.id}>
-                    <TableCell className="font-medium">{candidate.name}</TableCell>
-                    <TableCell>{candidate.email}</TableCell>
-                    <TableCell>{candidate.examTitle}</TableCell>
-                    <TableCell>{getStatusBadge(candidate.status)}</TableCell>
-                    <TableCell>
-                      {candidate.score ? `${candidate.score}%` : '-'}
-                    </TableCell>
-                    <TableCell>{candidate.timeSpent || '-'}</TableCell>
-                    <TableCell>
-                      {candidate.submittedAt 
-                        ? new Date(candidate.submittedAt).toLocaleDateString()
-                        : '-'
-                      }
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          {candidate.status === 'invited' && (
-                            <DropdownMenuItem onClick={() => handleResendInvitation(candidate.id)}>
-                              <Mail className="w-4 h-4 mr-2" />
-                              Resend Invitation
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => handleDeleteCandidate(candidate.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Remove
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          <CardContent className="p-0">
+            <div className="overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[150px]">Name</TableHead>
+                    <TableHead className="min-w-[200px]">Email</TableHead>
+                    <TableHead className="min-w-[150px] hidden md:table-cell">Exam</TableHead>
+                    <TableHead className="min-w-[100px]">Status</TableHead>
+                    <TableHead className="min-w-[80px] hidden lg:table-cell">Score</TableHead>
+                    <TableHead className="min-w-[100px] hidden lg:table-cell">Time Spent</TableHead>
+                    <TableHead className="min-w-[100px] hidden xl:table-cell">Submitted</TableHead>
+                    <TableHead className="w-[80px]">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredCandidates.map((candidate) => (
+                    <TableRow key={candidate.id}>
+                      <TableCell className="font-medium">{candidate.name}</TableCell>
+                      <TableCell>{candidate.email}</TableCell>
+                      <TableCell className="hidden md:table-cell">{candidate.examTitle}</TableCell>
+                      <TableCell>{getStatusBadge(candidate.status)}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {candidate.score ? `${candidate.score}%` : '-'}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">{candidate.timeSpent || '-'}</TableCell>
+                      <TableCell className="hidden xl:table-cell">
+                        {candidate.submittedAt 
+                          ? new Date(candidate.submittedAt).toLocaleDateString()
+                          : '-'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="w-4 h-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            {candidate.status === 'invited' && (
+                              <DropdownMenuItem onClick={() => handleResendInvitation(candidate.id)}>
+                                <Mail className="w-4 h-4 mr-2" />
+                                Resend Invitation
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteCandidate(candidate.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Remove
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>
