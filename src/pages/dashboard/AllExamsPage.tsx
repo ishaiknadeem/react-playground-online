@@ -19,6 +19,10 @@ const AllExamsPage = () => {
     queryFn: examApi.getAll,
   });
 
+  console.log('All Exams Page - Data:', exams);
+  console.log('All Exams Page - Loading:', isLoading);
+  console.log('All Exams Page - Error:', error);
+
   const filteredExams = exams?.filter(exam =>
     exam.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     exam.description.toLowerCase().includes(searchTerm.toLowerCase()) ||

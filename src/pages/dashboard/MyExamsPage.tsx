@@ -20,6 +20,10 @@ const MyExamsPage = () => {
     queryFn: () => examApi.getByExaminer(user?.id || ''),
   });
 
+  console.log('My Exams Page - Data:', exams);
+  console.log('My Exams Page - Loading:', isLoading);
+  console.log('My Exams Page - Error:', error);
+
   const filteredExams = exams?.filter(exam =>
     exam.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     exam.description.toLowerCase().includes(searchTerm.toLowerCase())

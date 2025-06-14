@@ -18,6 +18,10 @@ const CandidatesPage = () => {
     queryFn: candidateApi.getAll,
   });
 
+  console.log('Candidates Page - Data:', candidates);
+  console.log('Candidates Page - Loading:', isLoading);
+  console.log('Candidates Page - Error:', error);
+
   const filteredCandidates = candidates?.filter(candidate =>
     candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
