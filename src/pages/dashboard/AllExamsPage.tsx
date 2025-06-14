@@ -1,23 +1,100 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Eye, Users, Clock } from 'lucide-react';
+import { Search, Eye, Users, Clock, MoreHorizontal, Edit, Trash2, Play, Square } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import CreateExamModal from '@/components/dashboard/CreateExamModal';
 import { examApi, type ExamDetails } from '@/services/api';
 
 const AllExamsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: exams, isLoading, error } = useQuery({
     queryKey: ['all-exams'],
     queryFn: examApi.getAll,
   });
+
+  const updateExamMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<ExamDetails> }) =>
+      examApi.update(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-exams'] });
+      toast({
+        title: 'Success',
+        description: 'Exam updated successfully',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update exam',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteExamMutation = useMutation({
+    mutationFn: examApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-exams'] });
+      toast({
+        title: 'Success',
+        description: 'Exam deleted successfully',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete exam',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleToggleExamStatus = (exam: ExamDetails) => {
+    const newStatus = exam.status === 'active' ? 'draft' : 'active';
+    updateExamMutation.mutate({
+      id: exam.id,
+      updates: { status: newStatus }
+    });
+  };
+
+  const handleDeleteExam = (examId: string) => {
+    if (confirm('Are you sure you want to delete this exam? This action cannot be undone.')) {
+      deleteExamMutation.mutate(examId);
+    }
+  };
+
+  const handleViewExam = (examId: string) => {
+    // TODO: Navigate to exam details page
+    toast({
+      title: 'Feature Coming Soon',
+      description: 'Exam details view will be implemented',
+    });
+  };
+
+  const handleEditExam = (examId: string) => {
+    // TODO: Navigate to exam edit page
+    toast({
+      title: 'Feature Coming Soon',
+      description: 'Exam editing will be implemented',
+    });
+  };
 
   console.log('All Exams Page - Data:', exams);
   console.log('All Exams Page - Loading:', isLoading);
@@ -175,9 +252,44 @@ const AllExamsPage = () => {
                       {new Date(exam.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewExam(exam.id)}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditExam(exam.id)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleToggleExamStatus(exam)}>
+                            {exam.status === 'active' ? (
+                              <>
+                                <Square className="w-4 h-4 mr-2" />
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-4 h-4 mr-2" />
+                                Activate
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteExam(exam.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}

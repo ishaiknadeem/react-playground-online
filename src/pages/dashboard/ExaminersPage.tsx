@@ -1,23 +1,84 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, MoreHorizontal } from 'lucide-react';
+import { Search, MoreHorizontal, UserCheck, UserX, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AddExaminerModal from '@/components/dashboard/AddExaminerModal';
 import { examinerApi, type Examiner } from '@/services/api';
 
 const ExaminersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: examiners, isLoading, error } = useQuery({
     queryKey: ['examiners'],
     queryFn: examinerApi.getAll,
   });
+
+  const updateExaminerMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Examiner> }) =>
+      examinerApi.update(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['examiners'] });
+      toast({
+        title: 'Success',
+        description: 'Examiner updated successfully',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to update examiner',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteExaminerMutation = useMutation({
+    mutationFn: examinerApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['examiners'] });
+      toast({
+        title: 'Success',
+        description: 'Examiner deleted successfully',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete examiner',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleToggleStatus = (examiner: Examiner) => {
+    const newStatus = examiner.status === 'active' ? 'inactive' : 'active';
+    updateExaminerMutation.mutate({
+      id: examiner.id,
+      updates: { status: newStatus }
+    });
+  };
+
+  const handleDeleteExaminer = (examinerId: string) => {
+    if (confirm('Are you sure you want to delete this examiner?')) {
+      deleteExaminerMutation.mutate(examinerId);
+    }
+  };
 
   const filteredExaminers = examiners?.filter(examiner =>
     examiner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -99,9 +160,40 @@ const ExaminersPage = () => {
                     <TableCell>{examiner.examsCreated}</TableCell>
                     <TableCell>{new Date(examiner.lastLogin).toLocaleDateString()}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleToggleStatus(examiner)}>
+                            {examiner.status === 'active' ? (
+                              <>
+                                <UserX className="w-4 h-4 mr-2" />
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <UserCheck className="w-4 h-4 mr-2" />
+                                Activate
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteExaminer(examiner.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}

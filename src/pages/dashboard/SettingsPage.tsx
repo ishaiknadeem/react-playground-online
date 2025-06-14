@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,14 +9,17 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Save, Shield, Bell, Users, Code } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useAuthStore } from '@/store/authStore';
+import { settingsApi } from '@/services/api';
 
 const SettingsPage = () => {
   const { user } = useAuthStore();
+  const { toast } = useToast();
   const [settings, setSettings] = useState({
-    organizationName: 'Tech Corp',
-    website: 'https://techcorp.com',
+    organizationName: '',
+    website: '',
     emailNotifications: true,
     examReminders: true,
     autoGrading: true,
@@ -24,10 +28,54 @@ const SettingsPage = () => {
     allowedLanguages: ['javascript', 'python', 'java'],
   });
 
+  const { data: settingsData, isLoading } = useQuery({
+    queryKey: ['settings'],
+    queryFn: settingsApi.getSettings,
+  });
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: settingsApi.updateSettings,
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Settings saved successfully',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to save settings',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (settingsData) {
+      setSettings(settingsData);
+    }
+  }, [settingsData]);
+
   const handleSave = () => {
-    // TODO: Implement save functionality
-    console.log('Saving settings:', settings);
+    updateSettingsMutation.mutate(settings);
   };
+
+  const handleLanguageToggle = (lang: string) => {
+    const newLanguages = settings.allowedLanguages.includes(lang)
+      ? settings.allowedLanguages.filter(l => l !== lang)
+      : [...settings.allowedLanguages, lang];
+    setSettings({...settings, allowedLanguages: newLanguages});
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -143,12 +191,7 @@ const SettingsPage = () => {
                     key={lang}
                     variant={settings.allowedLanguages.includes(lang) ? "default" : "secondary"}
                     className="cursor-pointer"
-                    onClick={() => {
-                      const newLanguages = settings.allowedLanguages.includes(lang)
-                        ? settings.allowedLanguages.filter(l => l !== lang)
-                        : [...settings.allowedLanguages, lang];
-                      setSettings({...settings, allowedLanguages: newLanguages});
-                    }}
+                    onClick={() => handleLanguageToggle(lang)}
                   >
                     {lang}
                   </Badge>
@@ -214,14 +257,18 @@ const SettingsPage = () => {
                 </div>
               </div>
             </CardContent>
-          </Card>
+        </Card>
         )}
 
         {/* Save Button */}
         <div className="flex justify-end">
-          <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
+          <Button 
+            onClick={handleSave} 
+            className="bg-blue-600 hover:bg-blue-700"
+            disabled={updateSettingsMutation.isPending}
+          >
             <Save className="w-4 h-4 mr-2" />
-            Save Settings
+            {updateSettingsMutation.isPending ? 'Saving...' : 'Save Settings'}
           </Button>
         </div>
       </div>

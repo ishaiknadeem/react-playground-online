@@ -1,22 +1,93 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { UserPlus, Search, Send, Eye } from 'lucide-react';
+import { UserPlus, Search, Send, Eye, MoreHorizontal, Mail, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { candidateApi, type Candidate } from '@/services/api';
 
 const CandidatesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: candidates, isLoading, error } = useQuery({
     queryKey: ['candidates'],
     queryFn: candidateApi.getAll,
   });
+
+  const resendInvitationMutation = useMutation({
+    mutationFn: candidateApi.resendInvitation,
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Invitation resent successfully',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to resend invitation',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteCandidateMutation = useMutation({
+    mutationFn: candidateApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['candidates'] });
+      toast({
+        title: 'Success',
+        description: 'Candidate removed successfully',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to remove candidate',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleResendInvitation = (candidateId: string) => {
+    resendInvitationMutation.mutate(candidateId);
+  };
+
+  const handleDeleteCandidate = (candidateId: string) => {
+    if (confirm('Are you sure you want to remove this candidate?')) {
+      deleteCandidateMutation.mutate(candidateId);
+    }
+  };
+
+  const handleAddCandidate = () => {
+    // TODO: Implement add candidate modal
+    toast({
+      title: 'Feature Coming Soon',
+      description: 'Add candidate functionality will be implemented',
+    });
+  };
+
+  const handleSendInvites = () => {
+    // TODO: Implement bulk send invites
+    toast({
+      title: 'Feature Coming Soon',
+      description: 'Bulk send invites functionality will be implemented',
+    });
+  };
 
   console.log('Candidates Page - Data:', candidates);
   console.log('Candidates Page - Loading:', isLoading);
@@ -74,11 +145,11 @@ const CandidatesPage = () => {
             <p className="text-gray-600">Track candidate progress and exam results</p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleAddCandidate}>
               <UserPlus className="w-4 h-4 mr-2" />
               Add Candidate
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSendInvites}>
               <Send className="w-4 h-4 mr-2" />
               Send Invites
             </Button>
@@ -157,9 +228,33 @@ const CandidatesPage = () => {
                       }
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          {candidate.status === 'invited' && (
+                            <DropdownMenuItem onClick={() => handleResendInvitation(candidate.id)}>
+                              <Mail className="w-4 h-4 mr-2" />
+                              Resend Invitation
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteCandidate(candidate.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Remove
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}

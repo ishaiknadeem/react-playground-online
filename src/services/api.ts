@@ -1,4 +1,3 @@
-
 // API service with real REST endpoints and dummy data fallback
 export interface Examiner {
   id: string;
@@ -203,6 +202,44 @@ export const examinerApi = {
       MOCK_EXAMINERS.push(newExaminer);
       return newExaminer;
     }
+  },
+
+  update: async (id: string, updates: Partial<Examiner>): Promise<Examiner> => {
+    console.log('API: Updating examiner:', id, updates);
+    
+    try {
+      const data = await apiRequest(`/examiners/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+      console.log('API: Examiner updated successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('API: Failed to update examiner, using fallback:', error);
+      const examinerIndex = MOCK_EXAMINERS.findIndex(e => e.id === id);
+      if (examinerIndex !== -1) {
+        MOCK_EXAMINERS[examinerIndex] = { ...MOCK_EXAMINERS[examinerIndex], ...updates };
+        return MOCK_EXAMINERS[examinerIndex];
+      }
+      throw new Error('Examiner not found');
+    }
+  },
+
+  delete: async (id: string): Promise<void> => {
+    console.log('API: Deleting examiner:', id);
+    
+    try {
+      await apiRequest(`/examiners/${id}`, {
+        method: 'DELETE',
+      });
+      console.log('API: Examiner deleted successfully');
+    } catch (error) {
+      console.error('API: Failed to delete examiner, using fallback:', error);
+      const examinerIndex = MOCK_EXAMINERS.findIndex(e => e.id === id);
+      if (examinerIndex !== -1) {
+        MOCK_EXAMINERS.splice(examinerIndex, 1);
+      }
+    }
   }
 };
 
@@ -235,6 +272,57 @@ export const candidateApi = {
       const newCandidate = { ...candidate, id: Date.now().toString() };
       MOCK_CANDIDATES.push(newCandidate);
       return newCandidate;
+    }
+  },
+
+  update: async (id: string, updates: Partial<Candidate>): Promise<Candidate> => {
+    console.log('API: Updating candidate:', id, updates);
+    
+    try {
+      const data = await apiRequest(`/candidates/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+      console.log('API: Candidate updated successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('API: Failed to update candidate, using fallback:', error);
+      const candidateIndex = MOCK_CANDIDATES.findIndex(c => c.id === id);
+      if (candidateIndex !== -1) {
+        MOCK_CANDIDATES[candidateIndex] = { ...MOCK_CANDIDATES[candidateIndex], ...updates };
+        return MOCK_CANDIDATES[candidateIndex];
+      }
+      throw new Error('Candidate not found');
+    }
+  },
+
+  delete: async (id: string): Promise<void> => {
+    console.log('API: Deleting candidate:', id);
+    
+    try {
+      await apiRequest(`/candidates/${id}`, {
+        method: 'DELETE',
+      });
+      console.log('API: Candidate deleted successfully');
+    } catch (error) {
+      console.error('API: Failed to delete candidate, using fallback:', error);
+      const candidateIndex = MOCK_CANDIDATES.findIndex(c => c.id === id);
+      if (candidateIndex !== -1) {
+        MOCK_CANDIDATES.splice(candidateIndex, 1);
+      }
+    }
+  },
+
+  resendInvitation: async (id: string): Promise<void> => {
+    console.log('API: Resending invitation to candidate:', id);
+    
+    try {
+      await apiRequest(`/candidates/${id}/resend-invitation`, {
+        method: 'POST',
+      });
+      console.log('API: Invitation resent successfully');
+    } catch (error) {
+      console.error('API: Failed to resend invitation:', error);
     }
   }
 };
@@ -282,6 +370,84 @@ export const examApi = {
       const newExam = { ...exam, id: Date.now().toString() };
       MOCK_EXAMS.push(newExam);
       return newExam;
+    }
+  },
+
+  update: async (id: string, updates: Partial<ExamDetails>): Promise<ExamDetails> => {
+    console.log('API: Updating exam:', id, updates);
+    
+    try {
+      const data = await apiRequest(`/exams/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+      console.log('API: Exam updated successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('API: Failed to update exam, using fallback:', error);
+      const examIndex = MOCK_EXAMS.findIndex(e => e.id === id);
+      if (examIndex !== -1) {
+        MOCK_EXAMS[examIndex] = { ...MOCK_EXAMS[examIndex], ...updates };
+        return MOCK_EXAMS[examIndex];
+      }
+      throw new Error('Exam not found');
+    }
+  },
+
+  delete: async (id: string): Promise<void> => {
+    console.log('API: Deleting exam:', id);
+    
+    try {
+      await apiRequest(`/exams/${id}`, {
+        method: 'DELETE',
+      });
+      console.log('API: Exam deleted successfully');
+    } catch (error) {
+      console.error('API: Failed to delete exam, using fallback:', error);
+      const examIndex = MOCK_EXAMS.findIndex(e => e.id === id);
+      if (examIndex !== -1) {
+        MOCK_EXAMS.splice(examIndex, 1);
+      }
+    }
+  }
+};
+
+export const settingsApi = {
+  getSettings: async (): Promise<any> => {
+    console.log('API: Fetching organization settings...');
+    
+    try {
+      const data = await apiRequest('/settings');
+      console.log('API: Successfully fetched settings from server:', data);
+      return data;
+    } catch (error) {
+      console.error('API: Failed to fetch settings, using fallback data:', error);
+      return {
+        organizationName: 'Tech Corp',
+        website: 'https://techcorp.com',
+        emailNotifications: true,
+        examReminders: true,
+        autoGrading: true,
+        proctoring: false,
+        maxExamDuration: 120,
+        allowedLanguages: ['javascript', 'python', 'java'],
+      };
+    }
+  },
+
+  updateSettings: async (settings: any): Promise<any> => {
+    console.log('API: Updating organization settings:', settings);
+    
+    try {
+      const data = await apiRequest('/settings', {
+        method: 'PATCH',
+        body: JSON.stringify(settings),
+      });
+      console.log('API: Settings updated successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('API: Failed to update settings, using fallback:', error);
+      return settings;
     }
   }
 };
