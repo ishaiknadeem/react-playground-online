@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { Clock, Send, Play, CheckCircle, XCircle, AlertTriangle, Eye, Code } from 'lucide-react';
+import { Send, Play, AlertTriangle, Eye, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import MonacoEditor from '@monaco-editor/react';
 import { Question, TestCase } from '@/pages/Exam';
 import { toast } from '@/hooks/use-toast';
+import TestRunner from './TestRunner';
+import ExamTimer from './ExamTimer';
+import TestResultsPanel from './TestResultsPanel';
 
 interface ExamInterfaceProps {
   question: Question;
@@ -28,8 +32,21 @@ interface TabSwitchData {
 }
 
 const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSubmit }) => {
-  const [timeLeft, setTimeLeft] = useState(question.timeLimit * 60);
-  const [code, setCode] = useState(question.boilerplate.javascript);
+  // Safety checks for question prop
+  const safeQuestion = question || {
+    id: '',
+    title: 'Unknown Question',
+    description: 'No description available',
+    difficulty: 'Medium' as const,
+    timeLimit: 30,
+    testCases: [],
+    boilerplate: { javascript: '', html: '', css: '' }
+  };
+
+  const timeLimit = Math.max(1, safeQuestion.timeLimit || 30);
+  
+  const [timeLeft, setTimeLeft] = useState(timeLimit * 60);
+  const [code, setCode] = useState(safeQuestion.boilerplate?.javascript || '');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -42,7 +59,20 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
   const [activeTab, setActiveTab] = useState('code');
 
   // Check if this is a React exam
-  const isReactExam = question.id === 'id234' || question.title.toLowerCase().includes('react');
+  const isReactExam = React.useMemo(() => {
+    if (!safeQuestion) return false;
+    
+    const indicators = [
+      safeQuestion.title?.toLowerCase().includes('react'),
+      safeQuestion.description?.toLowerCase().includes('react'),
+      safeQuestion.description?.toLowerCase().includes('component'),
+      safeQuestion.boilerplate?.javascript?.includes('import React'),
+      safeQuestion.boilerplate?.javascript?.includes('useState'),
+      safeQuestion.id === 'id234'
+    ];
+    
+    return indicators.some(Boolean);
+  }, [safeQuestion]);
 
   // Tab switch detection
   useEffect(() => {
@@ -59,7 +89,6 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
           
           console.log('Tab switch detected:', newData);
           
-          // Show warning for every 3rd tab switch
           if (newData.totalSwitches % 3 === 0) {
             setShowTabWarning(true);
             newData.warningsShown++;
@@ -70,7 +99,6 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
               variant: "destructive"
             });
             
-            // Hide warning after 5 seconds
             setTimeout(() => setShowTabWarning(false), 5000);
           }
           
@@ -85,274 +113,41 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
 
   // Timer effect
   useEffect(() => {
+    if (!startTime || hasSubmitted) return;
+
     const timer = setInterval(() => {
       const now = new Date();
       const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
-      const remaining = Math.max(0, question.timeLimit * 60 - elapsed);
+      const remaining = Math.max(0, timeLimit * 60 - elapsed);
       
       setTimeLeft(remaining);
       
-      if (remaining === 0 && !hasSubmitted) {
+      if (remaining === 0) {
         handleSubmit();
       }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [startTime, question.timeLimit, hasSubmitted]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const testReactComponent = async (userCode: string, testCase: TestCase): Promise<TestResult> => {
-    return new Promise((resolve) => {
-      try {
-        // Create a test iframe
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-
-        const testHtml = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-            <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-            <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-          </head>
-          <body>
-            <div id="test-root"></div>
-            <script type="text/babel">
-              const { useState, useEffect } = React;
-              
-              // User's code (cleaned)
-              ${userCode.replace(/import\s+.*?from\s+['"]react['"];?\s*/g, '')
-                        .replace(/export\s+default\s+\w+;?\s*$/, '')}
-              
-              // Test runner
-              window.runTest = (testInput) => {
-                try {
-                  const root = ReactDOM.createRoot(document.getElementById('test-root'));
-                  
-                  if (typeof Counter === 'undefined') {
-                    return { success: false, error: 'Counter component not found' };
-                  }
-                  
-                  root.render(React.createElement(Counter));
-                  
-                  // Wait for component to render
-                  setTimeout(() => {
-                    try {
-                      const counterElement = document.getElementById('counter-value');
-                      const buttons = document.querySelectorAll('button');
-                      
-                      if (!counterElement) {
-                        window.parent.postMessage({ 
-                          success: false, 
-                          error: 'Counter element with id="counter-value" not found' 
-                        }, '*');
-                        return;
-                      }
-                      
-                      if (buttons.length < 3) {
-                        window.parent.postMessage({ 
-                          success: false, 
-                          error: 'Not enough buttons found (expected 3: Increment, Decrement, Reset)' 
-                        }, '*');
-                        return;
-                      }
-                      
-                      // Find buttons by text
-                      let incrementBtn, decrementBtn, resetBtn;
-                      buttons.forEach(btn => {
-                        const text = btn.textContent?.toLowerCase();
-                        if (text?.includes('increment')) incrementBtn = btn;
-                        else if (text?.includes('decrement')) decrementBtn = btn;
-                        else if (text?.includes('reset')) resetBtn = btn;
-                      });
-                      
-                      if (!incrementBtn || !decrementBtn || !resetBtn) {
-                        window.parent.postMessage({ 
-                          success: false, 
-                          error: 'Could not find buttons with correct text (Increment, Decrement, Reset)' 
-                        }, '*');
-                        return;
-                      }
-                      
-                      // Execute test based on input
-                      const { action, times = 1, initialValue = 0 } = testInput;
-                      
-                      // If we need to set initial value, we'll simulate it
-                      if (initialValue > 0) {
-                        for (let i = 0; i < initialValue; i++) {
-                          incrementBtn.click();
-                        }
-                      }
-                      
-                      // Perform the test action
-                      if (action === 'increment') {
-                        for (let i = 0; i < times; i++) {
-                          incrementBtn.click();
-                        }
-                      } else if (action === 'decrement') {
-                        for (let i = 0; i < times; i++) {
-                          decrementBtn.click();
-                        }
-                      } else if (action === 'reset') {
-                        resetBtn.click();
-                      }
-                      
-                      // Get final counter value
-                      const finalValue = parseInt(counterElement.textContent || '0');
-                      
-                      window.parent.postMessage({ 
-                        success: true, 
-                        result: finalValue 
-                      }, '*');
-                      
-                    } catch (err) {
-                      window.parent.postMessage({ 
-                        success: false, 
-                        error: err.message 
-                      }, '*');
-                    }
-                  }, 100);
-                  
-                } catch (err) {
-                  window.parent.postMessage({ 
-                    success: false, 
-                    error: err.message 
-                  }, '*');
-                }
-              };
-            </script>
-          </body>
-          </html>
-        `;
-
-        iframe.srcdoc = testHtml;
-
-        // Listen for test results
-        const messageHandler = (event: MessageEvent) => {
-          if (event.source === iframe.contentWindow) {
-            window.removeEventListener('message', messageHandler);
-            document.body.removeChild(iframe);
-            
-            if (event.data.success) {
-              const passed = event.data.result === testCase.expectedOutput;
-              resolve({
-                testCase,
-                passed,
-                output: event.data.result
-              });
-            } else {
-              resolve({
-                testCase,
-                passed: false,
-                output: null,
-                error: event.data.error
-              });
-            }
-          }
-        };
-
-        window.addEventListener('message', messageHandler);
-
-        // Start test after iframe loads
-        iframe.onload = () => {
-          setTimeout(() => {
-            if (iframe.contentWindow) {
-              try {
-                (iframe.contentWindow as any).runTest(testCase.input);
-              } catch (err) {
-                resolve({
-                  testCase,
-                  passed: false,
-                  output: null,
-                  error: 'Failed to execute test'
-                });
-              }
-            }
-          }, 500);
-        };
-
-        // Timeout after 5 seconds
-        setTimeout(() => {
-          window.removeEventListener('message', messageHandler);
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
-          resolve({
-            testCase,
-            passed: false,
-            output: null,
-            error: 'Test timeout'
-          });
-        }, 5000);
-
-      } catch (error) {
-        resolve({
-          testCase,
-          passed: false,
-          output: null,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
-      }
-    });
-  };
+  }, [startTime, timeLimit, hasSubmitted]);
 
   const runTests = useCallback(async () => {
+    if (!code?.trim()) {
+      toast({
+        title: "No Code",
+        description: "Please write some code before running tests.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsRunning(true);
-    console.log('Running tests...');
+    console.log('Running tests for question:', safeQuestion.id);
     
     try {
-      const results: TestResult[] = [];
-      
-      if (isReactExam) {
-        // Run actual React component tests
-        console.log('Running React component tests...');
-        for (const testCase of question.testCases) {
-          const result = await testReactComponent(code, testCase);
-          results.push(result);
-          console.log(`Test ${testCase.id}:`, result);
-        }
-      } else {
-        // Run JavaScript function tests
-        for (const testCase of question.testCases) {
-          try {
-            const wrappedCode = `
-              ${code}
-              
-              (function() {
-                const input = ${JSON.stringify(testCase.input)};
-                return twoSum(input.nums, input.target);
-              })();
-            `;
-            
-            const output = eval(wrappedCode);
-            const passed = JSON.stringify(output) === JSON.stringify(testCase.expectedOutput);
-            
-            results.push({
-              testCase,
-              passed,
-              output
-            });
-          } catch (error) {
-            results.push({
-              testCase,
-              passed: false,
-              output: null,
-              error: error instanceof Error ? error.message : 'Unknown error'
-            });
-          }
-        }
-      }
-      
+      const results = await TestRunner.runTests(safeQuestion, code);
       setTestResults(results);
       
-      const passedCount = results.filter(r => r.passed).length;
+      const passedCount = results.filter(r => r?.passed).length;
       const totalCount = results.length;
       
       toast({
@@ -371,35 +166,46 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
     }
     
     setIsRunning(false);
-  }, [code, question.testCases, isReactExam]);
+  }, [code, safeQuestion]);
 
   const handleSubmit = useCallback(() => {
     if (hasSubmitted) return;
     
     setHasSubmitted(true);
-    onSubmit(code, testResults, tabSwitchData);
     
-    toast({
-      title: "Solution Submitted",
-      description: "Your solution has been submitted successfully!"
-    });
+    try {
+      onSubmit(code, testResults, tabSwitchData);
+      
+      toast({
+        title: "Solution Submitted",
+        description: "Your solution has been submitted successfully!"
+      });
+    } catch (error) {
+      console.error('Submission failed:', error);
+      toast({
+        title: "Submission Error",
+        description: "Failed to submit solution. Please try again.",
+        variant: "destructive"
+      });
+    }
   }, [code, testResults, tabSwitchData, hasSubmitted, onSubmit]);
 
-  const getTimeColor = () => {
-    const percentage = timeLeft / (question.timeLimit * 60);
-    if (percentage > 0.5) return 'text-green-400';
-    if (percentage > 0.25) return 'text-yellow-400';
-    return 'text-red-400';
-  };
-
   const renderReactPreview = () => {
-    if (!isReactExam) return null;
+    if (!isReactExam || !code?.trim()) {
+      return (
+        <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="text-center">
+            <Code className="w-12 h-12 mx-auto mb-4" />
+            <p>Write your React component to see preview</p>
+          </div>
+        </div>
+      );
+    }
 
     try {
-      // Clean the code by removing import statements that aren't needed in browser
       const cleanedCode = code
-        .replace(/import\s+React.*?from\s+['"]react['"];?\s*/g, '')
-        .replace(/import\s+ReactDOM.*?from\s+['"]react-dom\/client['"];?\s*/g, '')
+        .replace(/import\s+.*?from\s+['"]react['"];?\s*/g, '')
+        .replace(/import\s+.*?from\s+['"]react-dom\/client['"];?\s*/g, '')
         .replace(/import\s+{.*?}\s+from\s+['"]react['"];?\s*/g, '')
         .replace(/export\s+default\s+\w+;?\s*$/, '');
 
@@ -414,16 +220,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
           <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
           <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
           <style>
-            ${question.boilerplate.css}
-            
-            body {
-              margin: 20px;
-              font-family: Arial, sans-serif;
-            }
-            
-            #root {
-              min-height: 200px;
-            }
+            ${safeQuestion.boilerplate?.css || 'body { margin: 20px; font-family: Arial, sans-serif; }'}
             
             .error-display {
               background: #ffebee;
@@ -444,24 +241,20 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
             try {
               ${cleanedCode}
               
-              // Try to find and render the Counter component
-              let ComponentToRender = Counter;
+              let ComponentToRender = null;
+              const possibleComponents = [
+                typeof Counter !== 'undefined' ? Counter : null,
+                typeof Component !== 'undefined' ? Component : null,
+                typeof App !== 'undefined' ? App : null
+              ].filter(Boolean);
               
-              if (!ComponentToRender) {
-                // Try to find any exported component
-                const components = [Counter];
-                ComponentToRender = components.find(comp => comp);
-              }
+              ComponentToRender = possibleComponents[0];
               
               if (ComponentToRender) {
-                const App = () => {
-                  return React.createElement(ComponentToRender);
-                };
-                
                 const root = ReactDOM.createRoot(document.getElementById('root'));
-                root.render(React.createElement(App));
+                root.render(React.createElement(ComponentToRender));
               } else {
-                document.getElementById('root').innerHTML = '<div class="error-display">No Counter component found. Make sure to define a Counter component.</div>';
+                document.getElementById('root').innerHTML = '<div class="error-display">No React component found. Make sure to define a component.</div>';
               }
             } catch (error) {
               console.error('Preview error:', error);
@@ -475,7 +268,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
       return (
         <iframe
           srcDoc={previewHtml}
-          className="w-full h-full border-0 bg-white"
+          className="w-full h-full border-0 bg-white rounded"
           title="React Component Preview"
           sandbox="allow-scripts"
         />
@@ -492,6 +285,17 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
       );
     }
   };
+
+  if (!safeQuestion.id) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-center">
+          <h1 className="text-2xl font-bold mb-4">Question Not Found</h1>
+          <p>The requested question could not be loaded.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
@@ -518,26 +322,30 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
       <div className="border-b border-gray-700/50 bg-gray-900/80 backdrop-blur-md px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-bold text-white">{question.title}</h1>
-            <Badge className="bg-blue-600">{question.difficulty}</Badge>
+            <h1 className="text-xl font-bold text-white truncate max-w-md">
+              {safeQuestion.title}
+            </h1>
+            <Badge className="bg-blue-600 flex-shrink-0">
+              {safeQuestion.difficulty}
+            </Badge>
             {tabSwitchData.totalSwitches > 0 && (
-              <Badge className="bg-red-600">
+              <Badge className="bg-red-600 flex-shrink-0">
                 Tab Switches: {tabSwitchData.totalSwitches}
               </Badge>
             )}
           </div>
           
           <div className="flex items-center space-x-4">
-            <div className={`flex items-center space-x-2 font-mono text-lg ${getTimeColor()}`}>
-              <Clock className="w-5 h-5" />
-              <span>{formatTime(timeLeft)}</span>
-            </div>
+            <ExamTimer 
+              timeLeft={timeLeft} 
+              totalTime={timeLimit * 60} 
+            />
             
             <Button
               onClick={runTests}
-              disabled={isRunning}
+              disabled={isRunning || hasSubmitted}
               variant="outline"
-              className="border-green-600 text-green-400 hover:bg-green-600/10"
+              className="border-green-600 text-green-400 hover:bg-green-600/10 flex-shrink-0"
             >
               <Play className="w-4 h-4 mr-2" />
               {isRunning ? 'Running...' : 'Run Tests'}
@@ -546,7 +354,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
             <Button
               onClick={handleSubmit}
               disabled={hasSubmitted}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 flex-shrink-0"
             >
               <Send className="w-4 h-4 mr-2" />
               Submit Solution
@@ -557,51 +365,21 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
 
       {/* Main Content */}
       <div className="flex h-[calc(100vh-73px)]">
-        {/* Left Panel - Problem Description */}
+        {/* Left Panel - Problem Description and Results */}
         <div className="w-1/3 border-r border-gray-700/50 bg-gray-900/30 overflow-y-auto">
-          <div className="p-6">
-            <Card className="bg-gray-800/50 border-gray-700 text-white mb-6">
+          <div className="p-6 space-y-6">
+            <Card className="bg-gray-800/50 border-gray-700 text-white">
               <CardHeader>
                 <CardTitle className="text-lg text-blue-400">Problem Description</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="whitespace-pre-line text-gray-300 leading-relaxed">
-                  {question.description}
+                  {safeQuestion.description || 'No description available'}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Test Results */}
-            {testResults.length > 0 && (
-              <Card className="bg-gray-800/50 border-gray-700 text-white">
-                <CardHeader>
-                  <CardTitle className="text-lg text-green-400">Test Results</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {testResults.map((result, index) => (
-                      <div key={result.testCase.id} className="flex items-center space-x-3">
-                        {result.passed ? (
-                          <CheckCircle className="w-5 h-5 text-green-400" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-400" />
-                        )}
-                        <div className="flex-1">
-                          <div className="text-sm font-medium">
-                            Test {index + 1}: {result.testCase.description}
-                          </div>
-                          {!result.passed && (
-                            <div className="text-xs text-red-300 mt-1">
-                              {result.error || `Expected: ${JSON.stringify(result.testCase.expectedOutput)}, Got: ${JSON.stringify(result.output)}`}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            <TestResultsPanel results={testResults} isLoading={isRunning} />
           </div>
         </div>
 
@@ -646,7 +424,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
                 />
               </TabsContent>
               
-              <TabsContent value="preview" className="flex-1 m-0">
+              <TabsContent value="preview" className="flex-1 m-0 p-4">
                 {renderReactPreview()}
               </TabsContent>
             </Tabs>
