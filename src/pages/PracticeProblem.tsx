@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Code, BookOpen } from 'lucide-react';
 import ExamInterface from '@/components/exam/ExamInterface';
 import { practiceApi } from '@/services/practiceApi';
 import { useQuery } from '@tanstack/react-query';
@@ -74,34 +74,55 @@ const PracticeProblem = () => {
 
   return (
     <div className="relative">
-      {/* Practice Mode Header Overlay */}
-      <div className="absolute top-4 left-4 z-50">
-        <div className="flex items-center space-x-2">
-          <Button 
-            onClick={() => navigate('/practice')} 
-            variant="outline"
-            size="sm"
-            className="bg-white/90 backdrop-blur-sm hover:bg-white"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Practice
-          </Button>
-          <div className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-medium">
-            Practice Mode
-          </div>
-          {pathId && (
-            <div className="bg-purple-600 text-white px-3 py-1 rounded-md text-sm font-medium">
-              Learning Path
+      {/* Clean Header Overlay */}
+      <div className="absolute top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Left Section */}
+          <div className="flex items-center space-x-3">
+            <Button 
+              onClick={() => navigate('/practice')} 
+              variant="ghost"
+              size="sm"
+              className="hover:bg-gray-100"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              <span className="hidden sm:inline">Back</span>
+            </Button>
+            
+            <div className="h-4 w-px bg-gray-300 hidden sm:block" />
+            
+            <div className="flex items-center space-x-2">
+              <Code className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-gray-700">Practice</span>
             </div>
-          )}
+          </div>
+
+          {/* Right Section */}
+          <div className="flex items-center space-x-2">
+            {pathId && (
+              <div className="flex items-center space-x-1 bg-purple-50 text-purple-700 px-2 py-1 rounded-md text-xs font-medium border border-purple-200">
+                <BookOpen className="w-3 h-3" />
+                <span className="hidden sm:inline">Learning Path</span>
+                <span className="sm:hidden">Path</span>
+              </div>
+            )}
+            
+            <div className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-medium border border-blue-200">
+              <span className="hidden sm:inline">Practice Mode</span>
+              <span className="sm:hidden">Practice</span>
+            </div>
+          </div>
         </div>
       </div>
       
-      <ExamInterface 
-        question={examQuestion}
-        startTime={startTime}
-        onSubmit={handleSubmit}
-      />
+      {/* Add top padding to account for fixed header */}
+      <div className="pt-16">
+        <ExamInterface 
+          question={examQuestion}
+          startTime={startTime}
+          onSubmit={handleSubmit}
+        />
+      </div>
     </div>
   );
 };
