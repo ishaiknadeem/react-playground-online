@@ -1,23 +1,58 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, Eye, Users, Clock, Edit, Copy } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import CreateExamModal from '@/components/dashboard/CreateExamModal';
+import AddCandidateModal from '@/components/dashboard/AddCandidateModal';
+import SendInvitesModal from '@/components/dashboard/SendInvitesModal';
+import ViewExamModal from '@/components/dashboard/ViewExamModal';
 import { examApi, type ExamDetails } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
 
 const MyExamsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { user } = useAuthStore();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: exams, isLoading, error } = useQuery({
     queryKey: ['my-exams', user?.id],
     queryFn: () => examApi.getByExaminer(user?.id || ''),
+  });
+
+  const duplicateExamMutation = useMutation({
+    mutationFn: async (exam: ExamDetails) => {
+      const duplicatedExam = {
+        ...exam,
+        title: `${exam.title} (Copy)`,
+        status: 'draft' as const,
+        createdAt: new Date().toISOString(),
+        candidates: 0,
+        completedSubmissions: 0,
+      };
+      delete (duplicatedExam as any).id;
+      return examApi.create(duplicatedExam);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-exams'] });
+      toast({
+        title: 'Success',
+        description: 'Exam duplicated successfully',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to duplicate exam',
+        variant: 'destructive',
+      });
+    },
   });
 
   console.log('My Exams Page - Data:', exams);
@@ -43,6 +78,18 @@ const MyExamsPage = () => {
     );
   };
 
+  const handleEditExam = (examId: string) => {
+    // TODO: Navigate to edit exam page
+    toast({
+      title: 'Feature Coming Soon',
+      description: 'Edit exam functionality will be implemented',
+    });
+  };
+
+  const handleDuplicateExam = (exam: ExamDetails) => {
+    duplicateExamMutation.mutate(exam);
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -61,12 +108,16 @@ const MyExamsPage = () => {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Exams</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">My Exams</h1>
             <p className="text-gray-600">Manage your created examinations</p>
           </div>
-          <CreateExamModal />
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <AddCandidateModal />
+            <SendInvitesModal />
+            <CreateExamModal />
+          </div>
         </div>
 
         {/* Search and Quick Stats */}
@@ -133,14 +184,28 @@ const MyExamsPage = () => {
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  <Button size="sm" variant="outline" className="flex-1">
-                    <Eye className="w-4 h-4 mr-1" />
-                    View
-                  </Button>
-                  <Button size="sm" variant="outline">
+                  <ViewExamModal 
+                    exam={exam}
+                    trigger={
+                      <Button size="sm" variant="outline" className="flex-1">
+                        <Eye className="w-4 h-4 mr-1" />
+                        View
+                      </Button>
+                    }
+                  />
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleEditExam(exam.id)}
+                  >
                     <Edit className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleDuplicateExam(exam)}
+                    disabled={duplicateExamMutation.isPending}
+                  >
                     <Copy className="w-4 h-4" />
                   </Button>
                 </div>
