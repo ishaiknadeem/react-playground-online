@@ -14,6 +14,7 @@ import Login from "./pages/Login";
 import CandidateLogin from "./pages/CandidateLogin";
 import Practice from "./pages/Practice";
 import PracticeProblem from "./pages/PracticeProblem";
+import InterviewSession from "./pages/InterviewSession";
 import Dashboard from "./pages/Dashboard";
 import ExaminersPage from "./pages/dashboard/ExaminersPage";
 import CandidatesPage from "./pages/dashboard/CandidatesPage";
@@ -46,6 +47,7 @@ const App = () => {
             <Route path="/candidate-login" element={<CandidateLogin />} />
             <Route path="/practice" element={<Practice />} />
             <Route path="/practice/problem" element={<PracticeProblem />} />
+            <Route path="/practice/interview-session" element={<InterviewSession />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/examiners" element={<ExaminersPage />} />
             <Route path="/dashboard/candidates" element={<CandidatesPage />} />
