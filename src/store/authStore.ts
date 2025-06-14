@@ -116,7 +116,7 @@ export const useAuthStore = create<AuthState>()(
           email: foundUser.email,
           name: foundUser.name,
           role: foundUser.role,
-          organizationId: foundUser.organizationId || undefined
+          organizationId: 'organizationId' in foundUser ? foundUser.organizationId : undefined
         };
         
         const token = generateMockToken(user);
