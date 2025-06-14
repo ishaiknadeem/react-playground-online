@@ -59,56 +59,76 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
             ...originalConsole,
             log: (...args) => {
               originalConsole.log(...args);
-              window.parent.postMessage({
-                type: 'console',
-                level: 'log',
-                message: args.map(arg => 
-                  typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                ).join(' ')
-              }, '*');
+              try {
+                window.parent.postMessage({
+                  type: 'console',
+                  level: 'log',
+                  message: args.map(arg => 
+                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                  ).join(' ')
+                }, '*');
+              } catch (e) {
+                originalConsole.error('Console message error:', e);
+              }
             },
             error: (...args) => {
               originalConsole.error(...args);
-              window.parent.postMessage({
-                type: 'console',
-                level: 'error',
-                message: args.map(arg => 
-                  typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                ).join(' ')
-              }, '*');
+              try {
+                window.parent.postMessage({
+                  type: 'console',
+                  level: 'error',
+                  message: args.map(arg => 
+                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                  ).join(' ')
+                }, '*');
+              } catch (e) {
+                originalConsole.error('Console error message error:', e);
+              }
             },
             warn: (...args) => {
               originalConsole.warn(...args);
-              window.parent.postMessage({
-                type: 'console',
-                level: 'warn',
-                message: args.map(arg => 
-                  typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                ).join(' ')
-              }, '*');
+              try {
+                window.parent.postMessage({
+                  type: 'console',
+                  level: 'warn',
+                  message: args.map(arg => 
+                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                  ).join(' ')
+                }, '*');
+              } catch (e) {
+                originalConsole.error('Console warn message error:', e);
+              }
             }
           };
 
           // Error handling
           window.addEventListener('error', (event) => {
-            window.parent.postMessage({
-              type: 'console',
-              level: 'error',
-              message: \`Error: \${event.message} at line \${event.lineno}\`
-            }, '*');
+            try {
+              window.parent.postMessage({
+                type: 'console',
+                level: 'error',
+                message: \`Error: \${event.message} at line \${event.lineno}\`
+              }, '*');
+            } catch (e) {
+              originalConsole.error('Error message posting failed:', e);
+            }
           });
 
           window.addEventListener('unhandledrejection', (event) => {
-            window.parent.postMessage({
-              type: 'console',
-              level: 'error',
-              message: \`Unhandled Promise Rejection: \${event.reason}\`
-            }, '*');
+            try {
+              window.parent.postMessage({
+                type: 'console',
+                level: 'error',
+                message: \`Unhandled Promise Rejection: \${event.reason}\`
+              }, '*');
+            } catch (e) {
+              originalConsole.error('Unhandled rejection message posting failed:', e);
+            }
           });
 
           // Execute the code
           try {
-            const code = \`${cleanedJS.replace(/`/g, '\\`')}\`;
+            const code = \`${cleanedJS.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
             
             // Transform JSX using Babel
             const transformedCode = Babel.transform(code, {
@@ -124,11 +144,15 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
             
           } catch (error) {
             console.error('JavaScript Error:', error);
-            window.parent.postMessage({
-              type: 'console',
-              level: 'error',
-              message: \`JavaScript Error: \${error.message}\`
-            }, '*');
+            try {
+              window.parent.postMessage({
+                type: 'console',
+                level: 'error',
+                message: \`JavaScript Error: \${error.message}\`
+              }, '*');
+            } catch (e) {
+              originalConsole.error('JavaScript error message posting failed:', e);
+            }
           }
         </script>
       </body>
