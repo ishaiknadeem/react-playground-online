@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Code, Timer, Users, ArrowRight, CheckCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
@@ -14,8 +15,8 @@ const Index = () => {
             <span className="text-2xl font-bold text-gray-900">CodeExam</span>
           </div>
           <div className="hidden md:flex space-x-6">
-            <a href="#features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</a>
-            <a href="#exams" className="text-gray-600 hover:text-blue-600 transition-colors">Exams</a>
+            <Link to="/features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</Link>
+            <Link to="/exams" className="text-gray-600 hover:text-blue-600 transition-colors">Exams</Link>
             <Button variant="outline" size="sm">Sign In</Button>
           </div>
         </nav>
@@ -42,13 +43,15 @@ const Index = () => {
               Start Practice Exam
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <Button 
-              variant="outline"
-              size="lg"
-              className="text-lg px-8 py-3 rounded-full border-2 hover:bg-gray-50 transition-all"
-            >
-              View Sample Questions
-            </Button>
+            <Link to="/exams">
+              <Button 
+                variant="outline"
+                size="lg"
+                className="text-lg px-8 py-3 rounded-full border-2 hover:bg-gray-50 transition-all"
+              >
+                View Sample Questions
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
