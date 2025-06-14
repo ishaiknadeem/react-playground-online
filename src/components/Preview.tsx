@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 
 interface PreviewProps {
@@ -504,7 +505,34 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
         </html>
       `;
     } else {
-      // Vanilla JavaScript mode
+      // Vanilla JavaScript mode - FIXED VERSION
+      console.log('Building vanilla JS preview with HTML:', html);
+      console.log('Building vanilla JS preview with CSS:', css);
+      console.log('Building vanilla JS preview with JS:', javascript);
+      
+      // Determine the HTML content to use
+      let htmlContent;
+      if (html && html.trim()) {
+        // User provided HTML - use it directly but ensure proper structure
+        if (html.includes('<!DOCTYPE') || html.includes('<html')) {
+          // Full HTML document provided
+          htmlContent = html;
+        } else if (html.includes('<body>')) {
+          // Body tag provided, wrap in minimal HTML
+          htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Preview</title></head>${html}</html>`;
+        } else {
+          // Just content, wrap in full structure
+          htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Preview</title></head><body>${html}</body></html>`;
+        }
+      } else {
+        // No HTML provided, create basic structure
+        htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Preview</title></head><body><div id="app">
+          <h1>Vanilla JavaScript Preview</h1>
+          <p>Add your HTML content in the HTML tab, or use JavaScript to create elements dynamically.</p>
+          <div id="output"></div>
+        </body></html>`;
+      }
+
       return `
         <!DOCTYPE html>
         <html lang="en">
@@ -524,13 +552,34 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
               margin: 0;
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
               overflow-x: hidden;
+              padding: 20px;
+            }
+
+            #app {
+              min-height: 50vh;
+            }
+
+            #output {
+              margin-top: 20px;
+              padding: 10px;
+              border: 1px solid #ddd;
+              border-radius: 4px;
+              background: #f9f9f9;
             }
           </style>
         </head>
         <body>
-          ${html.includes('<body>') ? html.replace(/<body[^>]*>/, '<body>').replace('</body>', '') : `<div id="app"></div>`}
+          ${html.trim() || `
+            <div id="app">
+              <h1>Vanilla JavaScript Preview</h1>
+              <p>Add your HTML content in the HTML tab, or use JavaScript to create elements dynamically.</p>
+              <div id="output"></div>
+            </div>
+          `}
           
           <script>
+            console.log('🚀 Vanilla JavaScript mode initialized');
+            
             // Override console methods to capture output
             const originalConsole = window.console;
             window.console = {
@@ -542,8 +591,9 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
                     type: 'console',
                     level: 'log',
                     message: args.map(arg => 
-                      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                    ).join(' ')
+                      typeof arg === 'object' && arg !== null ? JSON.stringify(arg, null, 2) : String(arg)
+                    ).join(' '),
+                    timestamp: Date.now()
                   }, '*');
                 } catch (e) {
                   originalConsole.error('Console message error:', e);
@@ -556,8 +606,9 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
                     type: 'console',
                     level: 'error',
                     message: args.map(arg => 
-                      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                    ).join(' ')
+                      typeof arg === 'object' && arg !== null ? JSON.stringify(arg, null, 2) : String(arg)
+                    ).join(' '),
+                    timestamp: Date.now()
                   }, '*');
                 } catch (e) {
                   originalConsole.error('Console error message error:', e);
@@ -570,8 +621,9 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
                     type: 'console',
                     level: 'warn',
                     message: args.map(arg => 
-                      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                    ).join(' ')
+                      typeof arg === 'object' && arg !== null ? JSON.stringify(arg, null, 2) : String(arg)
+                    ).join(' '),
+                    timestamp: Date.now()
                   }, '*');
                 } catch (e) {
                   originalConsole.error('Console warn message error:', e);
@@ -579,33 +631,49 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
               }
             };
 
-            // Error handling
+            // Global error handling
             window.addEventListener('error', (event) => {
-              try {
-                window.parent.postMessage({
-                  type: 'console',
-                  level: 'error',
-                  message: \`Error: \${event.message} at line \${event.lineno}\`
-                }, '*');
-              } catch (e) {
-                originalConsole.error('Error message posting failed:', e);
-              }
+              const errorMessage = \`❌ Error: \${event.message}\${event.filename ? ' in ' + event.filename : ''}\${event.lineno ? ' at line ' + event.lineno : ''}\`;
+              console.error(errorMessage);
             });
 
-            // Execute vanilla JavaScript code
-            try {
-              console.log('Executing vanilla JavaScript code...');
-              ${javascript.replace(/`/g, '\\`')}
-            } catch (error) {
-              console.error('JavaScript Error:', error);
+            window.addEventListener('unhandledrejection', (event) => {
+              console.error('❌ Unhandled Promise Rejection:', event.reason);
+              event.preventDefault();
+            });
+
+            // Wait for DOM to be ready
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', executeUserCode);
+            } else {
+              // DOM is already ready
+              executeUserCode();
+            }
+
+            function executeUserCode() {
               try {
-                window.parent.postMessage({
-                  type: 'console',
-                  level: 'error',
-                  message: \`JavaScript Error: \${error.message}\`
-                }, '*');
-              } catch (e) {
-                originalConsole.error('JavaScript error message posting failed:', e);
+                console.log('⚡ Executing vanilla JavaScript code...');
+                
+                const userCode = \`${javascript.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
+                
+                if (!userCode.trim()) {
+                  console.log('📝 No JavaScript code provided - add your code to see it execute!');
+                  // Still show the HTML content even without JS
+                  return;
+                }
+                
+                console.log('🔄 Running user JavaScript...');
+                
+                // Execute the user's JavaScript code
+                eval(userCode);
+                
+                console.log('✅ JavaScript execution completed successfully!');
+                
+              } catch (error) {
+                console.error('❌ JavaScript Error:', error.message);
+                if (error.stack) {
+                  console.error('Stack trace:', error.stack);
+                }
               }
             }
           </script>
