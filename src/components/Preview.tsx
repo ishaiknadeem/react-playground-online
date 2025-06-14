@@ -13,8 +13,8 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const createPreviewContent = useCallback(() => {
-    // Transform React/JSX code to work in browser
-    const transformedJS = javascript
+    // Clean and prepare the JavaScript code
+    const cleanedJS = javascript
       .replace(/import\s+React.*?from\s+['"]react['"];?\s*/g, '')
       .replace(/import\s+ReactDOM.*?from\s+['"]react-dom\/client['"];?\s*/g, '')
       .replace(/import\s+{.*?}\s+from\s+['"]react['"];?\s*/g, '')
@@ -41,11 +41,16 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
           body {
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            overflow-x: hidden;
+          }
+
+          #root {
+            min-height: 100vh;
           }
         </style>
       </head>
       <body>
-        ${html.replace(/<script.*?<\/script>/gs, '')}
+        <div id="root"></div>
         
         <script>
           // Override console methods to capture output
@@ -89,28 +94,40 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
             window.parent.postMessage({
               type: 'console',
               level: 'error',
-              message: event.message + ' at line ' + event.lineno
+              message: \`Error: \${event.message} at line \${event.lineno}\`
             }, '*');
           });
 
-          // Transform and execute the JavaScript code
-          try {
-            const code = \`${transformedJS}\`;
-            
-            // Use Babel to transform JSX
-            const transformedCode = Babel.transform(code, {
-              presets: ['react'],
-              plugins: []
-            }).code;
-            
-            // Execute the transformed code
-            eval(transformedCode);
-          } catch (error) {
-            console.error('JavaScript Error:', error.message);
+          window.addEventListener('unhandledrejection', (event) => {
             window.parent.postMessage({
               type: 'console',
               level: 'error',
-              message: 'JavaScript Error: ' + error.message
+              message: \`Unhandled Promise Rejection: \${event.reason}\`
+            }, '*');
+          });
+
+          // Execute the code
+          try {
+            const code = \`${cleanedJS}\`;
+            
+            // Transform JSX using Babel
+            const transformedCode = Babel.transform(code, {
+              presets: [['react', { runtime: 'classic' }]],
+              plugins: []
+            }).code;
+            
+            console.log('Executing transformed code...');
+            
+            // Execute in a safer context
+            const executeCode = new Function('React', 'ReactDOM', transformedCode);
+            executeCode(window.React, window.ReactDOM);
+            
+          } catch (error) {
+            console.error('JavaScript Error:', error);
+            window.parent.postMessage({
+              type: 'console',
+              level: 'error',
+              message: \`JavaScript Error: \${error.message}\`
             }, '*');
           }
         </script>
@@ -154,7 +171,7 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
         ref={iframeRef}
         className="w-full h-full border-none"
         title="Preview"
-        sandbox="allow-scripts allow-same-origin"
+        sandbox="allow-scripts allow-same-origin allow-modals"
       />
     </div>
   );

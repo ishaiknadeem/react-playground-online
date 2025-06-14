@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Play, Save, Share2, Download, Settings, Folder, FileText, Code, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -160,6 +159,7 @@ root.render(<App />);`
   const [packages, setPackages] = useState<string[]>(['react', 'react-dom']);
   const [consoleOutput, setConsoleOutput] = useState<Array<{type: string, message: string, timestamp: number}>>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [previewKey, setPreviewKey] = useState(0);
 
   // Auto-save to localStorage
   useEffect(() => {
@@ -175,6 +175,8 @@ root.render(<App />);`
 
   useEffect(() => {
     localStorage.setItem('code-editor-files', JSON.stringify(files));
+    // Auto-compile on file changes
+    setPreviewKey(prev => prev + 1);
   }, [files]);
 
   const updateFile = useCallback((fileType: keyof FileContent, content: string) => {
@@ -187,13 +189,13 @@ root.render(<App />);`
   const runCode = useCallback(() => {
     setIsRunning(true);
     setConsoleOutput([]);
+    setPreviewKey(prev => prev + 1);
     
-    // Add a small delay to show loading state
     setTimeout(() => {
       setIsRunning(false);
       toast({
-        title: "Code Updated",
-        description: "Your code has been compiled and is running in the preview.",
+        title: "Code Compiled",
+        description: "Your React code has been compiled and is running in the preview.",
       });
     }, 500);
   }, []);
@@ -255,8 +257,8 @@ root.render(<App />);`
               <Code className="w-6 h-6 text-blue-400" />
               <h1 className="text-xl font-bold">React Playground</h1>
             </div>
-            <Badge variant="secondary" className="bg-blue-600 text-white">
-              Live Preview
+            <Badge variant="secondary" className="bg-green-600 text-white">
+              Live Compiler
             </Badge>
           </div>
           
@@ -268,7 +270,7 @@ root.render(<App />);`
               size="sm"
             >
               <Play className="w-4 h-4 mr-2" />
-              {isRunning ? 'Running...' : 'Run'}
+              {isRunning ? 'Compiling...' : 'Compile & Run'}
             </Button>
             
             <Button
@@ -341,10 +343,14 @@ root.render(<App />);`
         <div className="w-1/2 flex flex-col">
           {/* Preview */}
           <div className="flex-1 border-b border-gray-700">
-            <div className="bg-gray-800 px-4 py-2 border-b border-gray-700">
-              <h3 className="text-sm font-medium text-gray-300">Preview</h3>
+            <div className="bg-gray-800 px-4 py-2 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-300">Compiled Output</h3>
+              <Badge variant="outline" className="text-xs">
+                Auto-compile enabled
+              </Badge>
             </div>
             <Preview
+              key={previewKey}
               html={files.html}
               css={files.css}
               javascript={files.javascript}
