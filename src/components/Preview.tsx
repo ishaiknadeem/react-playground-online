@@ -53,6 +53,9 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
         <div id="root"></div>
         
         <script>
+          // Make React hooks available globally
+          const { useState, useEffect, useContext, useReducer, useCallback, useMemo, useRef, useImperativeHandle, useLayoutEffect, useDebugValue } = React;
+          
           // Override console methods to capture output
           const originalConsole = window.console;
           window.console = {
@@ -138,9 +141,9 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
             
             console.log('Executing transformed code...');
             
-            // Execute in a safer context
-            const executeCode = new Function('React', 'ReactDOM', transformedCode);
-            executeCode(window.React, window.ReactDOM);
+            // Execute in a safer context with React and ReactDOM available
+            const executeCode = new Function('React', 'ReactDOM', 'useState', 'useEffect', 'useContext', 'useReducer', 'useCallback', 'useMemo', 'useRef', 'useImperativeHandle', 'useLayoutEffect', 'useDebugValue', transformedCode);
+            executeCode(window.React, window.ReactDOM, useState, useEffect, useContext, useReducer, useCallback, useMemo, useRef, useImperativeHandle, useLayoutEffect, useDebugValue);
             
           } catch (error) {
             console.error('JavaScript Error:', error);
