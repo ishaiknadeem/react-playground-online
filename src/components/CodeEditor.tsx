@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Play, Save, Share2, Download, Settings, Folder, FileText, Code, Palette, RotateCcw, Zap, Code2, Function } from 'lucide-react';
+import { Play, Settings, Folder, FileText, Code, Palette, RotateCcw, Zap, Code2, Cpu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,6 +12,7 @@ import Preview from './Preview';
 import Console from './Console';
 import PackageManager from './PackageManager';
 import { toast } from '@/hooks/use-toast';
+import CollapsibleConsolePanel from './CollapsibleConsolePanel';
 
 interface FileContent {
   html: string;
@@ -433,7 +434,6 @@ const CodeEditor = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
 
-  // Load saved mode and files from localStorage
   useEffect(() => {
     const savedMode = localStorage.getItem('code-editor-mode');
     const savedFiles = localStorage.getItem('code-editor-files');
@@ -454,7 +454,6 @@ const CodeEditor = () => {
     }
   }, []);
 
-  // Save mode and files to localStorage
   useEffect(() => {
     localStorage.setItem('code-editor-mode', JSON.stringify(compilerMode));
     localStorage.setItem('code-editor-files', JSON.stringify(files));
@@ -512,37 +511,6 @@ const CodeEditor = () => {
     });
   }, [compilerMode]);
 
-  const saveProject = useCallback(() => {
-    const projectData = {
-      files,
-      packages,
-      compilerMode,
-      timestamp: Date.now()
-    };
-    
-    localStorage.setItem('code-editor-project', JSON.stringify(projectData));
-    toast({
-      title: "Project Saved",
-      description: "Your project has been saved locally.",
-    });
-  }, [files, packages, compilerMode]);
-
-  const shareProject = useCallback(() => {
-    const shareData = {
-      files,
-      packages,
-      compilerMode
-    };
-    
-    const shareUrl = `${window.location.origin}?share=${btoa(JSON.stringify(shareData))}`;
-    navigator.clipboard.writeText(shareUrl);
-    
-    toast({
-      title: "Link Copied",
-      description: "Share link has been copied to clipboard.",
-    });
-  }, [files, packages, compilerMode]);
-
   const getFileIcon = (fileType: keyof FileContent) => {
     switch (fileType) {
       case 'html': return <FileText className="w-4 h-4" />;
@@ -565,7 +533,7 @@ const CodeEditor = () => {
     switch (mode) {
       case 'react': return <Zap className="w-4 h-4 text-blue-400" />;
       case 'vanilla': return <Code className="w-4 h-4 text-green-400" />;
-      case 'logic': return <Function className="w-4 h-4 text-purple-400" />;
+      case 'logic': return <Cpu className="w-4 h-4 text-purple-400" />;
     }
   };
 
@@ -620,7 +588,7 @@ const CodeEditor = () => {
                   </SelectItem>
                   <SelectItem value="logic" className="text-white hover:bg-gray-600">
                     <div className="flex items-center space-x-2">
-                      <Function className="w-4 h-4 text-purple-400" />
+                      <Cpu className="w-4 h-4 text-purple-400" />
                       <span>JS Logic</span>
                     </div>
                   </SelectItem>
@@ -656,26 +624,6 @@ const CodeEditor = () => {
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Reset
-            </Button>
-            
-            <Button
-              onClick={saveProject}
-              variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
-              size="sm"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Save
-            </Button>
-            
-            <Button
-              onClick={shareProject}
-              variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
-              size="sm"
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              Share
             </Button>
           </div>
         </div>
@@ -733,35 +681,14 @@ const CodeEditor = () => {
         </div>
 
         {/* Right Panel - Preview and Console */}
-        <div className="w-1/2 flex flex-col bg-gray-900/30">
-          {/* Preview */}
-          <div className="flex-1 border-b border-gray-700/50">
-            <div className="bg-gray-800/70 px-6 py-3 border-b border-gray-700/50 flex items-center justify-between backdrop-blur-sm">
-              <h3 className="text-sm font-medium text-gray-300 flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span>{compilerMode === 'logic' ? 'Function Output' : 'Live Preview'}</span>
-              </h3>
-              <Badge variant="outline" className="text-xs border-gray-600 text-gray-400">
-                Auto-compile enabled
-              </Badge>
-            </div>
-            <Preview
-              key={previewKey}
-              html={files.html}
-              css={files.css}
-              javascript={files.javascript}
-              packages={packages}
-              onConsoleOutput={(output) => setConsoleOutput(prev => [...prev, output])}
-              isReactMode={compilerMode === 'react'}
-              isLogicMode={compilerMode === 'logic'}
-            />
-          </div>
-
-          {/* Console */}
-          <div className="h-48 bg-gray-900/70">
-            <Console output={consoleOutput} />
-          </div>
-        </div>
+        <CollapsibleConsolePanel
+          files={files}
+          packages={packages}
+          previewKey={previewKey}
+          compilerMode={compilerMode}
+          consoleOutput={consoleOutput}
+          onConsoleOutput={(output) => setConsoleOutput(prev => [...prev, output])}
+        />
       </div>
 
       {/* Package Manager - Hidden for now */}
