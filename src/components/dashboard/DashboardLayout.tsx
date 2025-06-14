@@ -2,9 +2,8 @@
 import React from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
-import { Bell } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
+import NotificationPanel from './NotificationPanel';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -29,10 +28,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </div>
               
               <div className="flex items-center space-x-4 flex-shrink-0">
-                <Button variant="ghost" size="sm" className="relative">
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                </Button>
+                <NotificationPanel />
               </div>
             </div>
           </header>

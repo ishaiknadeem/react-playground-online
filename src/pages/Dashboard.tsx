@@ -1,37 +1,41 @@
 
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
+import { ExaminerDashboard } from '@/components/dashboard/ExaminerDashboard';
+import DashboardStats from '@/components/dashboard/DashboardStats';
+import RecentActivity from '@/components/dashboard/RecentActivity';
+import QuickActions from '@/components/dashboard/QuickActions';
 import { useAuthStore } from '@/store/authStore';
-import AdminDashboard from '@/components/dashboard/AdminDashboard';
-import ExaminerDashboard from '@/components/dashboard/ExaminerDashboard';
+import { Navigate } from 'react-router-dom';
 
 const Dashboard = () => {
-  const { user, isAuthenticated, checkAuth } = useAuthStore();
-  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuthStore();
 
-  useEffect(() => {
-    checkAuth();
-    
-    if (!isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, navigate, checkAuth]);
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {user.role === 'admin' ? <AdminDashboard /> : <ExaminerDashboard />}
-    </div>
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Dashboard Stats */}
+        <DashboardStats />
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Dashboard Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {user?.role === 'admin' ? <AdminDashboard /> : <ExaminerDashboard />}
+          </div>
+          
+          {/* Sidebar with Quick Actions and Recent Activity */}
+          <div className="lg:col-span-1 space-y-6">
+            <QuickActions />
+            <RecentActivity />
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 };
 
