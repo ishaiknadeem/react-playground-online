@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, Send, Play, CheckCircle, XCircle, AlertTriangle, Eye, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -204,7 +205,13 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
     if (!isReactExam) return null;
 
     try {
-      // Create a safe preview of the React component
+      // Clean the code by removing import statements that aren't needed in browser
+      const cleanedCode = code
+        .replace(/import\s+React.*?from\s+['"]react['"];?\s*/g, '')
+        .replace(/import\s+ReactDOM.*?from\s+['"]react-dom\/client['"];?\s*/g, '')
+        .replace(/import\s+{.*?}\s+from\s+['"]react['"];?\s*/g, '')
+        .replace(/export\s+default\s+\w+;?\s*$/, '');
+
       const previewHtml = `
         <!DOCTYPE html>
         <html lang="en">
@@ -212,24 +219,63 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>React Component Preview</title>
-          <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-          <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+          <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+          <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
           <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
           <style>
             ${question.boilerplate.css}
+            
+            body {
+              margin: 20px;
+              font-family: Arial, sans-serif;
+            }
+            
+            #root {
+              min-height: 200px;
+            }
+            
+            .error-display {
+              background: #ffebee;
+              border: 1px solid #f44336;
+              border-radius: 4px;
+              padding: 16px;
+              color: #c62828;
+              font-family: monospace;
+            }
           </style>
         </head>
         <body>
           <div id="root"></div>
+          
           <script type="text/babel">
-            ${code}
+            const { useState, useEffect, useCallback, useMemo, useRef } = React;
             
-            const App = () => {
-              return React.createElement(Counter);
-            };
-            
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(React.createElement(App));
+            try {
+              ${cleanedCode}
+              
+              // Try to find and render the Counter component
+              let ComponentToRender = Counter;
+              
+              if (!ComponentToRender) {
+                // Try to find any exported component
+                const components = [Counter];
+                ComponentToRender = components.find(comp => comp);
+              }
+              
+              if (ComponentToRender) {
+                const App = () => {
+                  return React.createElement(ComponentToRender);
+                };
+                
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(React.createElement(App));
+              } else {
+                document.getElementById('root').innerHTML = '<div class="error-display">No Counter component found. Make sure to define a Counter component.</div>';
+              }
+            } catch (error) {
+              console.error('Preview error:', error);
+              document.getElementById('root').innerHTML = '<div class="error-display">Error rendering component: ' + error.message + '</div>';
+            }
           </script>
         </body>
         </html>
