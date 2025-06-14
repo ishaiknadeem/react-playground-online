@@ -396,24 +396,6 @@ const CodeEditor = () => {
       />
     </div>
   );
-
-  function getFileIcon(fileType: keyof FileContent) {
-    switch (fileType) {
-      case 'html': return <FileText className="w-4 h-4" />;
-      case 'css': return <Palette className="w-4 h-4" />;
-      case 'javascript': return <Code className="w-4 h-4" />;
-      default: return <FileText className="w-4 h-4" />;
-    }
-  }
-
-  function getLanguage(fileType: keyof FileContent) {
-    switch (fileType) {
-      case 'html': return 'html';
-      case 'css': return 'css';
-      case 'javascript': return 'javascript';
-      default: return 'javascript';
-    }
-  }
 };
 
 export default CodeEditor;
