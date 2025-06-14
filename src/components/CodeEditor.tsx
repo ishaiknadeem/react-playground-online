@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Play, Save, Share2, Download, Settings, Folder, FileText, Code, Palette } from 'lucide-react';
+import { Play, Save, Share2, Download, Settings, Folder, FileText, Code, Palette, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,9 +16,8 @@ interface FileContent {
   javascript: string;
 }
 
-const CodeEditor = () => {
-  const [files, setFiles] = useState<FileContent>({
-    html: `<!DOCTYPE html>
+const defaultFiles: FileContent = {
+  html: `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -29,7 +28,7 @@ const CodeEditor = () => {
     <div id="root"></div>
 </body>
 </html>`,
-    css: `/* Your CSS styles here */
+  css: `/* Your CSS styles here */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -72,7 +71,7 @@ body {
 .button:hover {
   transform: translateY(-2px);
 }`,
-    javascript: `import React, { useState } from 'react';
+  javascript: `import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
 const App = () => {
@@ -153,8 +152,10 @@ const App = () => {
 // Render the app
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);`
-  });
+};
 
+const CodeEditor = () => {
+  const [files, setFiles] = useState<FileContent>(defaultFiles);
   const [activeTab, setActiveTab] = useState<keyof FileContent>('javascript');
   const [packages, setPackages] = useState<string[]>(['react', 'react-dom']);
   const [consoleOutput, setConsoleOutput] = useState<Array<{type: string, message: string, timestamp: number}>>([]);
@@ -198,6 +199,16 @@ root.render(<App />);`
         description: "Your React code has been compiled and is running in the preview.",
       });
     }, 500);
+  }, []);
+
+  const resetCode = useCallback(() => {
+    setFiles(defaultFiles);
+    setConsoleOutput([]);
+    setPreviewKey(prev => prev + 1);
+    toast({
+      title: "Code Reset",
+      description: "Your code has been reset to default.",
+    });
   }, []);
 
   const saveProject = useCallback(() => {
@@ -271,6 +282,16 @@ root.render(<App />);`
             >
               <Play className="w-4 h-4 mr-2" />
               {isRunning ? 'Compiling...' : 'Compile & Run'}
+            </Button>
+            
+            <Button
+              onClick={resetCode}
+              variant="outline"
+              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              size="sm"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Reset
             </Button>
             
             <Button

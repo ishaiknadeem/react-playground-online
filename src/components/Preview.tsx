@@ -108,7 +108,7 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
 
           // Execute the code
           try {
-            const code = \`${cleanedJS}\`;
+            const code = \`${cleanedJS.replace(/`/g, '\\`')}\`;
             
             // Transform JSX using Babel
             const transformedCode = Babel.transform(code, {
