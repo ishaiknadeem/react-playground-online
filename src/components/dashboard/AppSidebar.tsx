@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Code, BarChart3, Users, FileText, Settings, User, LogOut } from 'lucide-react';
@@ -31,8 +32,10 @@ export function AppSidebar() {
   };
 
   const handleNavigation = () => {
-    // Keep mobile sidebar closed after navigation
-    setOpenMobile(false);
+    // Always close mobile sidebar after navigation
+    if (setOpenMobile) {
+      setOpenMobile(false);
+    }
   };
 
   const adminNavItems = [
@@ -76,7 +79,11 @@ export function AppSidebar() {
                     isActive={location.pathname === item.href}
                     tooltip={state === 'collapsed' ? item.label : undefined}
                   >
-                    <Link to={item.href} className="flex items-center space-x-3" onClick={handleNavigation}>
+                    <Link 
+                      to={item.href} 
+                      className="flex items-center space-x-3" 
+                      onClick={handleNavigation}
+                    >
                       <item.icon className="w-5 h-5 flex-shrink-0" />
                       <span className="truncate">{item.label}</span>
                     </Link>
