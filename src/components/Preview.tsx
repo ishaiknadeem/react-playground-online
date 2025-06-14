@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 
 interface PreviewProps {
@@ -109,56 +110,40 @@ const Preview: React.FC<PreviewProps> = ({
           </div>
           
           <script>
-            // Override console methods to capture output and display results
+            // Store original console for internal use
             const originalConsole = window.console;
-            const results = [{ type: 'log', message: '🚀 Starting JavaScript execution...', timestamp: Date.now() }];
+            const results = [];
+            let isInitialized = false;
+            
+            // Add initial message
+            results.push({ 
+              type: 'log', 
+              message: '🚀 Starting JavaScript execution...', 
+              timestamp: Date.now() 
+            });
+            
+            function sendToParent(type, message, timestamp) {
+              try {
+                if (window.parent && window.parent !== window) {
+                  window.parent.postMessage({
+                    type: 'console',
+                    level: type,
+                    message: message,
+                    timestamp: timestamp || Date.now()
+                  }, '*');
+                }
+              } catch (e) {
+                originalConsole.error('Failed to send message to parent:', e);
+              }
+            }
             
             function addResult(type, message) {
               const timestamp = Date.now();
-              results.push({ type, message, timestamp });
+              const result = { type, message, timestamp };
+              results.push(result);
               updateResults();
-              
-              // Send to parent for console panel - ensure proper message structure
-              setTimeout(() => {
-                try {
-                  if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({
-                      type: 'console',
-                      level: type,
-                      message: message,
-                      timestamp: timestamp
-                    }, '*');
-                  }
-                } catch (e) {
-                  originalConsole.error('Console message error:', e);
-                }
-              }, 10);
+              sendToParent(type, message, timestamp);
             }
-
-            window.console = {
-              ...originalConsole,
-              log: (...args) => {
-                originalConsole.log(...args);
-                const message = args.map(arg => 
-                  typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                ).join(' ');
-                addResult('log', message);
-              },
-              error: (...args) => {
-                originalConsole.error(...args);
-                const message = args.map(arg => 
-                  typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                ).join(' ');
-                addResult('error', message);
-              },
-              warn: (...args) => {
-                originalConsole.warn(...args);
-                const message = args.map(arg => 
-                  typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                ).join(' ');
-                addResult('warn', message);
-              }
-            };
 
             function updateResults() {
               const resultsDiv = document.getElementById('results');
@@ -173,21 +158,89 @@ const Preview: React.FC<PreviewProps> = ({
               }
             }
 
-            // Error handling
-            window.addEventListener('error', (event) => {
-              const message = \`Error: \${event.message} at line \${event.lineno}\`;
+            // Override console methods
+            window.console = {
+              ...originalConsole,
+              log: function(...args) {
+                originalConsole.log(...args);
+                const message = args.map(arg => {
+                  if (typeof arg === 'object' && arg !== null) {
+                    try {
+                      return JSON.stringify(arg, null, 2);
+                    } catch (e) {
+                      return String(arg);
+                    }
+                  }
+                  return String(arg);
+                }).join(' ');
+                addResult('log', message);
+              },
+              error: function(...args) {
+                originalConsole.error(...args);
+                const message = args.map(arg => {
+                  if (typeof arg === 'object' && arg !== null) {
+                    try {
+                      return JSON.stringify(arg, null, 2);
+                    } catch (e) {
+                      return String(arg);
+                    }
+                  }
+                  return String(arg);
+                }).join(' ');
+                addResult('error', message);
+              },
+              warn: function(...args) {
+                originalConsole.warn(...args);
+                const message = args.map(arg => {
+                  if (typeof arg === 'object' && arg !== null) {
+                    try {
+                      return JSON.stringify(arg, null, 2);
+                    } catch (e) {
+                      return String(arg);
+                    }
+                  }
+                  return String(arg);
+                }).join(' ');
+                addResult('warn', message);
+              }
+            };
+
+            // Global error handling
+            window.addEventListener('error', function(event) {
+              const message = \`Error: \${event.message}\${event.filename ? ' in ' + event.filename : ''}\${event.lineno ? ' at line ' + event.lineno : ''}\`;
               addResult('error', message);
             });
 
-            window.addEventListener('unhandledrejection', (event) => {
+            window.addEventListener('unhandledrejection', function(event) {
               const message = \`Unhandled Promise Rejection: \${event.reason}\`;
               addResult('error', message);
+              event.preventDefault();
             });
 
-            // Execute JavaScript logic code immediately
-            setTimeout(() => {
+            // Initialize and execute user code
+            function executeUserCode() {
+              if (isInitialized) return;
+              isInitialized = true;
+              
+              // Update initial display
+              updateResults();
+              
+              // Send initial message to parent
+              sendToParent('log', '🚀 Starting JavaScript execution...', Date.now());
+              
               try {
-                ${javascript.replace(/`/g, '\\`')}
+                // Execute the user's JavaScript code
+                const userCode = \`${javascript.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
+                
+                if (!userCode.trim()) {
+                  console.log('No JavaScript code to execute');
+                  return;
+                }
+                
+                // Use Function constructor for safer execution
+                const executeFunction = new Function(userCode);
+                executeFunction();
+                
                 console.log('✅ JavaScript execution completed successfully!');
               } catch (error) {
                 console.error('❌ JavaScript Error:', error.message);
@@ -195,7 +248,14 @@ const Preview: React.FC<PreviewProps> = ({
                   console.error('Stack trace:', error.stack);
                 }
               }
-            }, 100);
+            }
+            
+            // Execute immediately when DOM is ready
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', executeUserCode);
+            } else {
+              executeUserCode();
+            }
           </script>
         </body>
         </html>
@@ -509,10 +569,10 @@ const Preview: React.FC<PreviewProps> = ({
   }, [html, css, javascript, isReactMode, isLogicMode]);
 
   const handleMessage = useCallback((event: MessageEvent) => {
-    if (event.data.type === 'console') {
+    if (event.data && event.data.type === 'console') {
       onConsoleOutput({
-        type: event.data.level,
-        message: event.data.message,
+        type: event.data.level || event.data.type,
+        message: event.data.message || '',
         timestamp: event.data.timestamp || Date.now()
       });
     }
