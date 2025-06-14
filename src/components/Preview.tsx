@@ -53,110 +53,141 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
         <div id="root"></div>
         
         <script>
-          // Make React hooks available globally
-          const { useState, useEffect, useContext, useReducer, useCallback, useMemo, useRef, useImperativeHandle, useLayoutEffect, useDebugValue } = React;
-          
-          // Override console methods to capture output
-          const originalConsole = window.console;
-          window.console = {
-            ...originalConsole,
-            log: (...args) => {
-              originalConsole.log(...args);
-              try {
-                window.parent.postMessage({
-                  type: 'console',
-                  level: 'log',
-                  message: args.map(arg => 
-                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                  ).join(' ')
-                }, '*');
-              } catch (e) {
-                originalConsole.error('Console message error:', e);
+          // Wait for React to be fully loaded
+          window.addEventListener('load', function() {
+            // Make React hooks available globally
+            const { useState, useEffect, useContext, useReducer, useCallback, useMemo, useRef, useImperativeHandle, useLayoutEffect, useDebugValue } = React;
+            
+            // Override console methods to capture output
+            const originalConsole = window.console;
+            window.console = {
+              ...originalConsole,
+              log: (...args) => {
+                originalConsole.log(...args);
+                try {
+                  window.parent.postMessage({
+                    type: 'console',
+                    level: 'log',
+                    message: args.map(arg => 
+                      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                    ).join(' ')
+                  }, '*');
+                } catch (e) {
+                  originalConsole.error('Console message error:', e);
+                }
+              },
+              error: (...args) => {
+                originalConsole.error(...args);
+                try {
+                  window.parent.postMessage({
+                    type: 'console',
+                    level: 'error',
+                    message: args.map(arg => 
+                      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                    ).join(' ')
+                  }, '*');
+                } catch (e) {
+                  originalConsole.error('Console error message error:', e);
+                }
+              },
+              warn: (...args) => {
+                originalConsole.warn(...args);
+                try {
+                  window.parent.postMessage({
+                    type: 'console',
+                    level: 'warn',
+                    message: args.map(arg => 
+                      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                    ).join(' ')
+                  }, '*');
+                } catch (e) {
+                  originalConsole.error('Console warn message error:', e);
+                }
               }
-            },
-            error: (...args) => {
-              originalConsole.error(...args);
+            };
+
+            // Error handling
+            window.addEventListener('error', (event) => {
               try {
                 window.parent.postMessage({
                   type: 'console',
                   level: 'error',
-                  message: args.map(arg => 
-                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                  ).join(' ')
+                  message: \`Error: \${event.message} at line \${event.lineno}\`
                 }, '*');
               } catch (e) {
-                originalConsole.error('Console error message error:', e);
+                originalConsole.error('Error message posting failed:', e);
               }
-            },
-            warn: (...args) => {
-              originalConsole.warn(...args);
+            });
+
+            window.addEventListener('unhandledrejection', (event) => {
               try {
                 window.parent.postMessage({
                   type: 'console',
-                  level: 'warn',
-                  message: args.map(arg => 
-                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                  ).join(' ')
+                  level: 'error',
+                  message: \`Unhandled Promise Rejection: \${event.reason}\`
                 }, '*');
               } catch (e) {
-                originalConsole.error('Console warn message error:', e);
+                originalConsole.error('Unhandled rejection message posting failed:', e);
+              }
+            });
+
+            // Execute the code
+            try {
+              const code = \`${cleanedJS.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
+              
+              // Transform JSX using Babel
+              const transformedCode = Babel.transform(code, {
+                presets: [['react', { runtime: 'classic' }]],
+                plugins: []
+              }).code;
+              
+              console.log('Executing transformed code...');
+              
+              // Execute in a safer context with React and ReactDOM available
+              const executeCode = new Function(
+                'React', 
+                'ReactDOM', 
+                'useState', 
+                'useEffect', 
+                'useContext', 
+                'useReducer', 
+                'useCallback', 
+                'useMemo', 
+                'useRef', 
+                'useImperativeHandle', 
+                'useLayoutEffect', 
+                'useDebugValue',
+                transformedCode
+              );
+              
+              executeCode(
+                window.React, 
+                window.ReactDOM, 
+                useState, 
+                useEffect, 
+                useContext, 
+                useReducer, 
+                useCallback, 
+                useMemo, 
+                useRef, 
+                useImperativeHandle, 
+                useLayoutEffect, 
+                useDebugValue
+              );
+              
+            } catch (error) {
+              console.error('JavaScript Error:', error);
+              try {
+                window.parent.postMessage({
+                  type: 'console',
+                  level: 'error',
+                  message: \`JavaScript Error: \${error.message}\`
+                }, '*');
+              } catch (e) {
+                originalConsole.error('JavaScript error message posting failed:', e);
               }
             }
-          };
-
-          // Error handling
-          window.addEventListener('error', (event) => {
-            try {
-              window.parent.postMessage({
-                type: 'console',
-                level: 'error',
-                message: \`Error: \${event.message} at line \${event.lineno}\`
-              }, '*');
-            } catch (e) {
-              originalConsole.error('Error message posting failed:', e);
-            }
           });
-
-          window.addEventListener('unhandledrejection', (event) => {
-            try {
-              window.parent.postMessage({
-                type: 'console',
-                level: 'error',
-                message: \`Unhandled Promise Rejection: \${event.reason}\`
-              }, '*');
-            } catch (e) {
-              originalConsole.error('Unhandled rejection message posting failed:', e);
-            }
-          });
-
-          // Execute the code
-          try {
-            const code = \`${cleanedJS.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
-            
-            // Transform JSX using Babel
-            const transformedCode = Babel.transform(code, {
-              presets: [['react', { runtime: 'classic' }]],
-              plugins: []
-            }).code;
-            
-            console.log('Executing transformed code...');
-            
-            // Execute in a safer context with React and ReactDOM available
-            const executeCode = new Function('React', 'ReactDOM', 'useState', 'useEffect', 'useContext', 'useReducer', 'useCallback', 'useMemo', 'useRef', 'useImperativeHandle', 'useLayoutEffect', 'useDebugValue', transformedCode);
-            executeCode(window.React, window.ReactDOM, useState, useEffect, useContext, useReducer, useCallback, useMemo, useRef, useImperativeHandle, useLayoutEffect, useDebugValue);
-            
-          } catch (error) {
-            console.error('JavaScript Error:', error);
-            try {
-              window.parent.postMessage({
-                type: 'console',
-                level: 'error',
-                message: \`JavaScript Error: \${error.message}\`
-              }, '*');
-            } catch (e) {
-              originalConsole.error('JavaScript error message posting failed:', e);
-            }
-          }
         </script>
       </body>
       </html>
