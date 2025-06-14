@@ -1,4 +1,3 @@
-
 export interface PracticeQuestion {
   id: string;
   title: string;
@@ -489,6 +488,228 @@ console.log('Test 3:', isValid("(]")); // Expected: false`,
 <body>
     <div id="app">
         <h1>Valid Parentheses Problem</h1>
+        <p>Check the console for test results</p>
+    </div>
+</body>
+</html>`,
+      css: `body {
+  font-family: Arial, sans-serif;
+  margin: 40px;
+  background: #f5f5f5;
+}`
+    }
+  },
+  {
+    id: 'fibonacci-dp',
+    title: 'Fibonacci Number',
+    difficulty: 'Easy',
+    category: 'Dynamic Programming',
+    timeEstimate: 20,
+    description: `The Fibonacci numbers, commonly denoted F(n) form a sequence, called the Fibonacci sequence, such that each number is the sum of the two preceding ones, starting from 0 and 1.
+
+Given n, calculate F(n).
+
+Example 1:
+Input: n = 2
+Output: 1
+Explanation: F(2) = F(1) + F(0) = 1 + 0 = 1.
+
+Example 2:
+Input: n = 3
+Output: 2
+Explanation: F(3) = F(2) + F(1) = 1 + 1 = 2.
+
+Constraints:
+- 0 <= n <= 30`,
+    acceptance: 67.8,
+    likes: 8234,
+    tags: ['Math', 'Dynamic Programming', 'Recursion', 'Memoization'],
+    companies: ['Amazon', 'Microsoft', 'Apple', 'Adobe'],
+    testCases: [
+      {
+        id: '1',
+        input: { n: 2 },
+        expectedOutput: 1,
+        description: 'Basic case'
+      },
+      {
+        id: '2',
+        input: { n: 3 },
+        expectedOutput: 2,
+        description: 'Another basic case'
+      }
+    ],
+    boilerplate: {
+      javascript: `function fib(n) {
+    // Your solution here
+    
+}
+
+// Test the function
+console.log('Testing fibonacci...');
+console.log('Test 1:', fib(2)); // Expected: 1
+console.log('Test 2:', fib(3)); // Expected: 2`,
+      html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fibonacci Number</title>
+</head>
+<body>
+    <div id="app">
+        <h1>Fibonacci Number Problem</h1>
+        <p>Check the console for test results</p>
+    </div>
+</body>
+</html>`,
+      css: `body {
+  font-family: Arial, sans-serif;
+  margin: 40px;
+  background: #f5f5f5;
+}`
+    }
+  },
+  {
+    id: 'longest-substring',
+    title: 'Longest Substring Without Repeating Characters',
+    difficulty: 'Medium',
+    category: 'Hash Table',
+    timeEstimate: 35,
+    description: `Given a string s, find the length of the longest substring without repeating characters.
+
+Example 1:
+Input: s = "abcabcbb"
+Output: 3
+Explanation: The answer is "abc", with the length of 3.
+
+Example 2:
+Input: s = "bbbbb"
+Output: 1
+Explanation: The answer is "b", with the length of 1.
+
+Example 3:
+Input: s = "pwwkew"
+Output: 3
+Explanation: The answer is "wke", with the length of 3.
+Notice that the answer must be a substring, "pwke" is a subsequence and not a substring.
+
+Constraints:
+- 0 <= s.length <= 5 * 10^4
+- s consists of English letters, digits, symbols and spaces.`,
+    acceptance: 33.8,
+    likes: 25641,
+    tags: ['Hash Table', 'String', 'Sliding Window'],
+    companies: ['Amazon', 'Microsoft', 'Facebook', 'Apple', 'Google', 'Bloomberg'],
+    testCases: [
+      {
+        id: '1',
+        input: { s: "abcabcbb" },
+        expectedOutput: 3,
+        description: 'String with repeating pattern'
+      },
+      {
+        id: '2',
+        input: { s: "bbbbb" },
+        expectedOutput: 1,
+        description: 'All same characters'
+      }
+    ],
+    boilerplate: {
+      javascript: `function lengthOfLongestSubstring(s) {
+    // Your solution here
+    
+}
+
+// Test the function
+console.log('Testing longest substring...');
+console.log('Test 1:', lengthOfLongestSubstring("abcabcbb")); // Expected: 3
+console.log('Test 2:', lengthOfLongestSubstring("bbbbb")); // Expected: 1`,
+      html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Longest Substring</title>
+</head>
+<body>
+    <div id="app">
+        <h1>Longest Substring Problem</h1>
+        <p>Check the console for test results</p>
+    </div>
+</body>
+</html>`,
+      css: `body {
+  font-family: Arial, sans-serif;
+  margin: 40px;
+  background: #f5f5f5;
+}`
+    }
+  },
+  {
+    id: 'best-time-stock',
+    title: 'Best Time to Buy and Sell Stock',
+    difficulty: 'Easy',
+    category: 'Array',
+    timeEstimate: 20,
+    description: `You are given an array prices where prices[i] is the price of a given stock on the ith day.
+
+You want to maximize your profit by choosing a single day to buy one stock and choosing a different day in the future to sell that stock.
+
+Return the maximum profit you can achieve from this transaction. If you cannot achieve any profit, return 0.
+
+Example 1:
+Input: prices = [7,1,5,3,6,4]
+Output: 5
+Explanation: Buy on day 2 (price = 1) and sell on day 5 (price = 6), profit = 6-1 = 5.
+Note that buying on day 2 and selling on day 1 is not allowed because you must buy before you sell.
+
+Example 2:
+Input: prices = [7,6,4,3,1]
+Output: 0
+Explanation: In this case, no transactions are done and the max profit = 0.
+
+Constraints:
+- 1 <= prices.length <= 10^5
+- 0 <= prices[i] <= 10^4`,
+    acceptance: 54.2,
+    likes: 19856,
+    tags: ['Array', 'Dynamic Programming'],
+    companies: ['Amazon', 'Microsoft', 'Facebook', 'Apple', 'Google', 'Goldman Sachs'],
+    testCases: [
+      {
+        id: '1',
+        input: { prices: [7,1,5,3,6,4] },
+        expectedOutput: 5,
+        description: 'Profit possible'
+      },
+      {
+        id: '2',
+        input: { prices: [7,6,4,3,1] },
+        expectedOutput: 0,
+        description: 'No profit possible'
+      }
+    ],
+    boilerplate: {
+      javascript: `function maxProfit(prices) {
+    // Your solution here
+    
+}
+
+// Test the function
+console.log('Testing stock profit...');
+console.log('Test 1:', maxProfit([7,1,5,3,6,4])); // Expected: 5
+console.log('Test 2:', maxProfit([7,6,4,3,1])); // Expected: 0`,
+      html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Best Time to Buy and Sell Stock</title>
+</head>
+<body>
+    <div id="app">
+        <h1>Stock Trading Problem</h1>
         <p>Check the console for test results</p>
     </div>
 </body>

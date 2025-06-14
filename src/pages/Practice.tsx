@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,15 +7,19 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Code2, Clock, Trophy, Search, Filter, Play, Star, TrendingUp, LogOut, User, Target, Zap, Award, Calendar, Heart } from 'lucide-react';
+import { Code2, Clock, Trophy, Search, Filter, Play, Star, TrendingUp, LogOut, User, Target, Zap, Award, Calendar, Heart, Timer, BookOpen, Users } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { practiceApi, PracticeQuestion, UserProgress } from '@/services/practiceApi';
 import { useQuery } from '@tanstack/react-query';
+import AchievementBadges, { Achievement } from '@/components/practice/AchievementBadges';
+import LearningPaths, { LearningPath } from '@/components/practice/LearningPaths';
+import InterviewPrepMode from '@/components/practice/InterviewPrepMode';
 
 const Practice = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [companyFilter, setCompanyFilter] = useState('all');
   const [sortBy, setSortBy] = useState('popularity');
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
@@ -31,6 +34,60 @@ const Practice = () => {
     queryFn: practiceApi.getUserProgress,
   });
 
+  // Mock achievements data
+  const achievements: Achievement[] = [
+    {
+      id: 'first-solve',
+      title: 'First Steps',
+      description: 'Solved your first problem',
+      icon: <Star className="w-4 h-4" />,
+      earned: (userProgress?.totalSolved || 0) > 0,
+      category: 'solving'
+    },
+    {
+      id: 'week-streak',
+      title: 'Consistent Learner',
+      description: 'Maintained a 7-day streak',
+      icon: <Zap className="w-4 h-4" />,
+      earned: (userProgress?.streak || 0) >= 7,
+      category: 'streak'
+    },
+    {
+      id: 'ten-problems',
+      title: 'Problem Solver',
+      description: 'Solved 10 problems',
+      icon: <Trophy className="w-4 h-4" />,
+      earned: (userProgress?.totalSolved || 0) >= 10,
+      progress: userProgress?.totalSolved || 0,
+      maxProgress: 10,
+      category: 'solving'
+    }
+  ];
+
+  // Mock learning paths data
+  const learningPaths: LearningPath[] = [
+    {
+      id: 'arrays-basics',
+      title: 'Arrays & Strings Fundamentals',
+      description: 'Master the basics of arrays and string manipulation',
+      difficulty: 'Beginner',
+      estimatedTime: '2-3 weeks',
+      problems: ['two-sum', 'reverse-string', 'valid-parentheses'],
+      completedProblems: ['two-sum', 'reverse-string'],
+      category: 'Data Structures'
+    },
+    {
+      id: 'dynamic-programming',
+      title: 'Dynamic Programming Mastery',
+      description: 'Learn to solve complex optimization problems',
+      difficulty: 'Advanced',
+      estimatedTime: '4-6 weeks',
+      problems: ['fibonacci', 'coin-change', 'longest-subsequence'],
+      completedProblems: [],
+      category: 'Algorithms'
+    }
+  ];
+
   const filteredAndSortedQuestions = React.useMemo(() => {
     let filtered = questions.filter(question => {
       const matchesSearch = question.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -38,8 +95,10 @@ const Practice = () => {
                            question.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesDifficulty = difficultyFilter === 'all' || question.difficulty === difficultyFilter;
       const matchesCategory = categoryFilter === 'all' || question.category === categoryFilter;
+      const matchesCompany = companyFilter === 'all' || 
+                            (question.companies && question.companies.includes(companyFilter));
       
-      return matchesSearch && matchesDifficulty && matchesCategory;
+      return matchesSearch && matchesDifficulty && matchesCategory && matchesCompany;
     });
 
     // Sort questions
@@ -59,11 +118,16 @@ const Practice = () => {
     });
 
     return filtered;
-  }, [questions, searchTerm, difficultyFilter, categoryFilter, sortBy]);
+  }, [questions, searchTerm, difficultyFilter, categoryFilter, companyFilter, sortBy]);
 
   const categories = React.useMemo(() => {
     const cats = new Set(questions.map(q => q.category));
     return Array.from(cats);
+  }, [questions]);
+
+  const companies = React.useMemo(() => {
+    const comps = new Set(questions.flatMap(q => q.companies || []));
+    return Array.from(comps);
   }, [questions]);
 
   const getDifficultyColor = (difficulty: string) => {
@@ -82,6 +146,20 @@ const Practice = () => {
 
   const handleStartProblem = (questionId: string) => {
     navigate(`/practice/problem?id=${questionId}`);
+  };
+
+  const handleStartPath = (pathId: string) => {
+    const path = learningPaths.find(p => p.id === pathId);
+    if (path && path.problems.length > 0) {
+      const nextProblem = path.problems.find(p => !path.completedProblems.includes(p)) || path.problems[0];
+      navigate(`/practice/problem?id=${nextProblem}&path=${pathId}`);
+    }
+  };
+
+  const handleStartInterviewSession = (sessionId: string, config: any) => {
+    console.log('Starting interview session:', sessionId, config);
+    // In a real implementation, this would start a timed interview session
+    navigate('/practice/interview-session', { state: { sessionId, config } });
   };
 
   if (questionsLoading) {
@@ -135,12 +213,17 @@ const Practice = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs defaultValue="problems" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:w-96">
+          <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
             <TabsTrigger value="problems">Problems</TabsTrigger>
+            <TabsTrigger value="paths">Learning Paths</TabsTrigger>
+            <TabsTrigger value="interview">Interview Prep</TabsTrigger>
             <TabsTrigger value="progress">Progress</TabsTrigger>
           </TabsList>
 
           <TabsContent value="problems" className="space-y-6">
+            {/* Achievements Section */}
+            <AchievementBadges achievements={achievements} />
+
             {/* Filters Section */}
             <Card>
               <CardContent className="p-6">
@@ -178,6 +261,18 @@ const Practice = () => {
                         <SelectItem value="all">All Categories</SelectItem>
                         {categories.map(category => (
                           <SelectItem key={category} value={category}>{category}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={companyFilter} onValueChange={setCompanyFilter}>
+                      <SelectTrigger className="w-full sm:w-48">
+                        <SelectValue placeholder="Company" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Companies</SelectItem>
+                        {companies.map(company => (
+                          <SelectItem key={company} value={company}>{company}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -294,6 +389,14 @@ const Practice = () => {
                 </Card>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="paths" className="space-y-6">
+            <LearningPaths paths={learningPaths} onStartPath={handleStartPath} />
+          </TabsContent>
+
+          <TabsContent value="interview" className="space-y-6">
+            <InterviewPrepMode onStartSession={handleStartInterviewSession} />
           </TabsContent>
 
           <TabsContent value="progress" className="space-y-6">
