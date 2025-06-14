@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 
 interface PreviewProps {
@@ -120,11 +121,14 @@ const Preview: React.FC<PreviewProps> = ({
               
               // Send to parent for console panel
               try {
-                window.parent.postMessage({
-                  type: 'console',
-                  level: type,
-                  message: message
-                }, '*');
+                if (window.parent && window.parent !== window) {
+                  window.parent.postMessage({
+                    type: 'console',
+                    level: type,
+                    message: message,
+                    timestamp: timestamp
+                  }, '*');
+                }
               } catch (e) {
                 originalConsole.error('Console message error:', e);
               }
@@ -179,16 +183,34 @@ const Preview: React.FC<PreviewProps> = ({
               addResult('error', message);
             });
 
-            // Execute JavaScript logic code
-            try {
-              ${javascript.replace(/`/g, '\\`')}
-              console.log('✅ JavaScript execution completed successfully!');
-            } catch (error) {
-              console.error('❌ JavaScript Error:', error.message);
-              if (error.stack) {
-                console.error('Stack trace:', error.stack);
+            // Send initial message to parent
+            setTimeout(() => {
+              try {
+                if (window.parent && window.parent !== window) {
+                  window.parent.postMessage({
+                    type: 'console',
+                    level: 'log',
+                    message: '🚀 Starting JavaScript execution...',
+                    timestamp: Date.now()
+                  }, '*');
+                }
+              } catch (e) {
+                originalConsole.error('Initial message error:', e);
               }
-            }
+            }, 100);
+
+            // Execute JavaScript logic code
+            setTimeout(() => {
+              try {
+                ${javascript.replace(/`/g, '\\`')}
+                console.log('✅ JavaScript execution completed successfully!');
+              } catch (error) {
+                console.error('❌ JavaScript Error:', error.message);
+                if (error.stack) {
+                  console.error('Stack trace:', error.stack);
+                }
+              }
+            }, 200);
           </script>
         </body>
         </html>
@@ -506,7 +528,7 @@ const Preview: React.FC<PreviewProps> = ({
       onConsoleOutput({
         type: event.data.level,
         message: event.data.message,
-        timestamp: Date.now()
+        timestamp: event.data.timestamp || Date.now()
       });
     }
   }, [onConsoleOutput]);
