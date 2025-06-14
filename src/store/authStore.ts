@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -6,21 +5,21 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'examiner';
-  organizationId: string;
+  role: 'admin' | 'examiner' | 'candidate';
+  organizationId?: string;
 }
 
 interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string, userType: 'admin' | 'candidate') => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   checkAuth: () => void;
 }
 
 // Dummy credentials for testing
-const DUMMY_USERS = [
+const DUMMY_ADMIN_USERS = [
   {
     id: '1',
     email: 'admin@company.com',
@@ -36,6 +35,23 @@ const DUMMY_USERS = [
     name: 'HR Manager',
     role: 'examiner' as const,
     organizationId: 'org1'
+  }
+];
+
+const DUMMY_CANDIDATES = [
+  {
+    id: 'c1',
+    email: 'john@example.com',
+    password: 'candidate123',
+    name: 'John Doe',
+    role: 'candidate' as const
+  },
+  {
+    id: 'c2',
+    email: 'jane@example.com',
+    password: 'candidate123',
+    name: 'Jane Smith',
+    role: 'candidate' as const
   }
 ];
 
@@ -83,12 +99,10 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
 
-      login: async (email: string, password: string) => {
-        // TODO: Replace with actual API call
-        // const response = await authService.login(email, password);
+      login: async (email: string, password: string, userType: 'admin' | 'candidate') => {
+        const users = userType === 'admin' ? DUMMY_ADMIN_USERS : DUMMY_CANDIDATES;
         
-        // Mock authentication
-        const foundUser = DUMMY_USERS.find(
+        const foundUser = users.find(
           u => u.email === email && u.password === password
         );
         

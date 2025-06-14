@@ -6,11 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, User, Lock, ArrowRight } from 'lucide-react';
+import { Code2, User, Lock, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from '@/hooks/use-toast';
 
-const Login = () => {
+const CandidateLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,14 +24,14 @@ const Login = () => {
     setError('');
 
     try {
-      const result = await login(email, password, 'admin');
+      const result = await login(email, password, 'candidate');
       
       if (result.success) {
         toast({
-          title: "Welcome back!",
-          description: "Successfully logged in to your dashboard",
+          title: "Welcome!",
+          description: "Successfully logged in to CodePractice",
         });
-        navigate('/dashboard');
+        navigate('/practice');
       } else {
         setError(result.error || 'Login failed');
       }
@@ -43,21 +43,21 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <Shield className="w-12 h-12 text-blue-600" />
+            <Code2 className="w-12 h-12 text-blue-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Portal</h1>
-          <p className="text-gray-600">Access the exam management system</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">CodePractice</h1>
+          <p className="text-gray-600">Practice coding challenges and improve your skills</p>
         </div>
 
         <Card className="shadow-xl border-0">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Sign In</CardTitle>
             <CardDescription className="text-center">
-              Enter your admin credentials to continue
+              Enter your credentials to access the practice platform
             </CardDescription>
           </CardHeader>
           
@@ -119,15 +119,15 @@ const Login = () => {
               </Button>
               
               <div className="text-center text-sm text-gray-600">
-                Demo: admin@company.com / admin123 or hr@company.com / hr123
+                Demo credentials: john@example.com / candidate123
               </div>
               
               <div className="text-center">
                 <Link 
-                  to="/candidate-login" 
+                  to="/login" 
                   className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
                 >
-                  Looking to practice coding? Try our practice platform
+                  Are you an admin or examiner? Click here
                 </Link>
               </div>
             </CardFooter>
@@ -138,4 +138,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default CandidateLogin;
