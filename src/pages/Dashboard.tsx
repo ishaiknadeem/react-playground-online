@@ -1,8 +1,8 @@
 
 import React from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
-import { ExaminerDashboard } from '@/components/dashboard/ExaminerDashboard';
+import AdminDashboard from '@/components/dashboard/AdminDashboard';
+import ExaminerDashboard from '@/components/dashboard/ExaminerDashboard';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import QuickActions from '@/components/dashboard/QuickActions';
