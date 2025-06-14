@@ -23,16 +23,6 @@ const Preview: React.FC<PreviewProps> = ({
 
   const previewContent = useMemo(() => {
     if (isLogicMode) {
-      // Properly escape JavaScript code for safe injection
-      const escapedJavaScript = javascript
-        .replace(/\\/g, '\\\\')
-        .replace(/'/g, "\\'")
-        .replace(/"/g, '\\"')
-        .replace(/`/g, '\\`')
-        .replace(/\r?\n/g, '\\n')
-        .replace(/\r/g, '\\r')
-        .replace(/\t/g, '\\t');
-
       // Add sample data if no user code is provided
       const sampleCode = `
 // Sample Dataset - Feel free to modify or replace!
@@ -77,190 +67,117 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
       `.trim();
 
       const codeToExecute = javascript.trim() || sampleCode;
-      const finalEscapedCode = codeToExecute
-        .replace(/\\/g, '\\\\')
-        .replace(/'/g, "\\'")
-        .replace(/"/g, '\\"')
-        .replace(/`/g, '\\`')
-        .replace(/\r?\n/g, '\\n')
-        .replace(/\r/g, '\\r')
-        .replace(/\t/g, '\\t');
 
-      // Pure JavaScript Logic Mode
+      // Pure JavaScript Logic Mode - Console Only
       return `
         <!DOCTYPE html>
         <html lang="en">
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>JavaScript Logic Compiler</title>
+          <title>JavaScript Logic Console</title>
           <style>
             ${css}
             
-            /* Enhanced UX styles */
             * {
               box-sizing: border-box;
             }
             
             body {
               margin: 0;
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-              overflow-x: hidden;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              min-height: 100vh;
-              padding: 20px;
+              font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+              background: #0d1117;
+              color: #c9d1d9;
+              height: 100vh;
+              overflow: hidden;
             }
 
-            .container {
-              max-width: 1200px;
-              margin: 0 auto;
+            .console-container {
+              height: 100vh;
+              display: flex;
+              flex-direction: column;
             }
 
-            .header {
-              text-align: center;
-              margin-bottom: 30px;
-              color: white;
-            }
-
-            .header h1 {
-              font-size: 2.5rem;
-              margin: 0 0 10px 0;
-              font-weight: 700;
-              text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            }
-
-            .header p {
-              font-size: 1.1rem;
-              opacity: 0.9;
-              margin: 0;
-            }
-
-            .results-container {
-              background: white;
-              border-radius: 16px;
-              padding: 30px;
-              box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-              backdrop-filter: blur(10px);
-              border: 1px solid rgba(255,255,255,0.2);
-            }
-
-            .results-header {
-              margin: 0 0 25px 0;
-              color: #2d3748;
-              font-size: 1.3rem;
-              font-weight: 600;
+            .console-header {
+              background: #161b22;
+              border-bottom: 1px solid #30363d;
+              padding: 12px 16px;
               display: flex;
               align-items: center;
-              gap: 12px;
-              padding-bottom: 15px;
-              border-bottom: 2px solid #e2e8f0;
+              gap: 8px;
+              font-size: 14px;
+              font-weight: 500;
             }
 
-            .status-indicator {
-              width: 12px;
-              height: 12px;
-              background: #48bb78;
+            .status-dot {
+              width: 8px;
+              height: 8px;
+              background: #238636;
               border-radius: 50%;
               animation: pulse 2s infinite;
             }
 
             @keyframes pulse {
-              0% { opacity: 1; }
+              0%, 100% { opacity: 1; }
               50% { opacity: 0.5; }
-              100% { opacity: 1; }
             }
 
-            .results-output {
-              font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-              background: #1a202c;
-              color: #e2e8f0;
-              padding: 25px;
-              border-radius: 12px;
+            .console-output {
+              flex: 1;
+              padding: 16px;
+              overflow-y: auto;
+              font-size: 13px;
+              line-height: 1.5;
+            }
+
+            .console-line {
+              margin: 4px 0;
+              padding: 4px 0;
               white-space: pre-wrap;
-              overflow-x: auto;
-              min-height: 400px;
-              font-size: 14px;
-              line-height: 1.6;
-              box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+              word-wrap: break-word;
             }
 
-            .result-item {
-              margin: 6px 0;
-              padding: 8px 0;
-              border-left: 3px solid transparent;
-              padding-left: 12px;
-              transition: all 0.2s ease;
+            .console-log {
+              color: #7c3aed;
             }
 
-            .result-item:hover {
-              background: rgba(255,255,255,0.05);
-              border-radius: 6px;
+            .console-error {
+              color: #f87171;
+              background: rgba(248, 113, 113, 0.1);
+              padding: 8px;
+              border-left: 3px solid #f87171;
+              border-radius: 4px;
+              margin: 8px 0;
             }
 
-            .result-log {
-              color: #68d391;
-              border-left-color: #68d391;
-            }
-
-            .result-error {
-              color: #fc8181;
-              border-left-color: #fc8181;
-              background: rgba(252, 129, 129, 0.1);
-            }
-
-            .result-warn {
-              color: #f6e05e;
-              border-left-color: #f6e05e;
+            .console-warn {
+              color: #fbbf24;
             }
 
             .timestamp {
-              color: #a0aec0;
-              font-size: 12px;
+              color: #6b7280;
+              font-size: 11px;
               margin-right: 8px;
-            }
-
-            .welcome-message {
-              background: linear-gradient(90deg, #4299e1, #3182ce);
-              color: white;
-              padding: 15px 20px;
-              border-radius: 8px;
-              margin-bottom: 20px;
-              text-align: center;
-              font-weight: 500;
             }
           </style>
         </head>
         <body>
-          <div class="container">
-            <div class="header">
-              <h1>JavaScript Logic Compiler</h1>
-              <p>Execute JavaScript code and see real-time results</p>
+          <div class="console-container">
+            <div class="console-header">
+              <div class="status-dot"></div>
+              <span>JavaScript Console</span>
             </div>
-            
-            <div class="results-container">
-              <div class="results-header">
-                <span>🚀</span>
-                <span>Execution Results</span>
-                <div class="status-indicator"></div>
-              </div>
-              
-              <div class="welcome-message">
-                ${javascript.trim() ? 'Executing your custom JavaScript code...' : 'Running sample code demonstration - replace with your own JavaScript!'}
-              </div>
-              
-              <div id="results" class="results-output">
-                <div class="result-item result-log">
-                  <span class="timestamp">[Loading...]</span>
-                  🔧 Initializing JavaScript environment...
-                </div>
+            <div id="console" class="console-output">
+              <div class="console-line">
+                <span class="timestamp">[Loading...]</span>
+                <span>🔧 Initializing JavaScript environment...</span>
               </div>
             </div>
           </div>
           
           <script>
-            // Store original console for internal use
             const originalConsole = window.console;
-            const results = [];
+            const consoleElement = document.getElementById('console');
             let isInitialized = false;
             
             function sendToParent(type, message, timestamp) {
@@ -278,31 +195,18 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
               }
             }
             
-            function addResult(type, message) {
-              const timestamp = Date.now();
-              const result = { type, message, timestamp };
-              results.push(result);
-              updateResults();
-              sendToParent(type, message, timestamp);
+            function addToConsole(type, message) {
+              const timestamp = new Date().toLocaleTimeString();
+              const line = document.createElement('div');
+              line.className = 'console-line console-' + type;
+              line.innerHTML = \`<span class="timestamp">[\${timestamp}]</span><span>\${message}</span>\`;
+              consoleElement.appendChild(line);
+              consoleElement.scrollTop = consoleElement.scrollHeight;
+              
+              sendToParent(type, message, Date.now());
             }
 
-            function updateResults() {
-              const resultsDiv = document.getElementById('results');
-              if (resultsDiv) {
-                resultsDiv.innerHTML = results.map(result => {
-                  const className = result.type === 'error' ? 'result-error' : 
-                                   result.type === 'warn' ? 'result-warn' : 'result-log';
-                  const timestamp = new Date(result.timestamp).toLocaleTimeString();
-                  return \`<div class="result-item \${className}">
-                    <span class="timestamp">[\${timestamp}]</span>
-                    \${result.message}
-                  </div>\`;
-                }).join('');
-                resultsDiv.scrollTop = resultsDiv.scrollHeight;
-              }
-            }
-
-            // Override console methods with enhanced formatting
+            // Override console methods
             window.console = {
               ...originalConsole,
               log: function(...args) {
@@ -317,7 +221,7 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
                   }
                   return String(arg);
                 }).join(' ');
-                addResult('log', message);
+                addToConsole('log', message);
               },
               error: function(...args) {
                 originalConsole.error(...args);
@@ -331,7 +235,7 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
                   }
                   return String(arg);
                 }).join(' ');
-                addResult('error', message);
+                addToConsole('error', message);
               },
               warn: function(...args) {
                 originalConsole.warn(...args);
@@ -345,33 +249,33 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
                   }
                   return String(arg);
                 }).join(' ');
-                addResult('warn', message);
+                addToConsole('warn', message);
               }
             };
 
             // Global error handling
             window.addEventListener('error', function(event) {
               const message = \`❌ Runtime Error: \${event.message}\${event.filename ? ' in ' + event.filename : ''}\${event.lineno ? ' at line ' + event.lineno : ''}\`;
-              addResult('error', message);
+              addToConsole('error', message);
             });
 
             window.addEventListener('unhandledrejection', function(event) {
               const message = \`❌ Unhandled Promise Rejection: \${event.reason}\`;
-              addResult('error', message);
+              addToConsole('error', message);
               event.preventDefault();
             });
 
-            // Initialize and execute user code
-            function executeUserCode() {
+            // Execute user code
+            function executeCode() {
               if (isInitialized) return;
               isInitialized = true;
               
-              // Clear loading message and add welcome
-              results.length = 0;
-              addResult('log', '🚀 JavaScript execution environment ready!');
+              // Clear loading and start execution
+              consoleElement.innerHTML = '';
+              addToConsole('log', '🚀 JavaScript execution environment ready!');
               
               try {
-                const userCode = '${finalEscapedCode}';
+                const userCode = \`${codeToExecute.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
                 
                 if (!userCode.trim()) {
                   console.log('📝 No JavaScript code provided - add your code to see it execute!');
@@ -379,13 +283,12 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
                 }
                 
                 console.log('⚡ Executing JavaScript code...');
-                console.log('━'.repeat(50));
+                console.log('━'.repeat(40));
                 
-                // Execute the user's code using eval in a try-catch
                 eval(userCode);
                 
-                console.log('━'.repeat(50));
-                console.log('✅ JavaScript execution completed successfully!');
+                console.log('━'.repeat(40));
+                console.log('✅ JavaScript execution completed!');
               } catch (error) {
                 console.error('JavaScript Execution Error:', error.message);
                 if (error.stack) {
@@ -394,11 +297,11 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
               }
             }
             
-            // Execute when DOM is ready
+            // Execute when ready
             if (document.readyState === 'loading') {
-              document.addEventListener('DOMContentLoaded', executeUserCode);
+              document.addEventListener('DOMContentLoaded', executeCode);
             } else {
-              setTimeout(executeUserCode, 100);
+              setTimeout(executeCode, 100);
             }
           </script>
         </body>
