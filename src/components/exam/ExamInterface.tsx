@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, Send, Play, CheckCircle, XCircle, AlertTriangle, Eye, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -107,30 +106,222 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const runTests = useCallback(() => {
+  const testReactComponent = async (userCode: string, testCase: TestCase): Promise<TestResult> => {
+    return new Promise((resolve) => {
+      try {
+        // Create a test iframe
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+
+        const testHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+            <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+            <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+          </head>
+          <body>
+            <div id="test-root"></div>
+            <script type="text/babel">
+              const { useState, useEffect } = React;
+              
+              // User's code (cleaned)
+              ${userCode.replace(/import\s+.*?from\s+['"]react['"];?\s*/g, '')
+                        .replace(/export\s+default\s+\w+;?\s*$/, '')}
+              
+              // Test runner
+              window.runTest = (testInput) => {
+                try {
+                  const root = ReactDOM.createRoot(document.getElementById('test-root'));
+                  
+                  if (typeof Counter === 'undefined') {
+                    return { success: false, error: 'Counter component not found' };
+                  }
+                  
+                  root.render(React.createElement(Counter));
+                  
+                  // Wait for component to render
+                  setTimeout(() => {
+                    try {
+                      const counterElement = document.getElementById('counter-value');
+                      const buttons = document.querySelectorAll('button');
+                      
+                      if (!counterElement) {
+                        window.parent.postMessage({ 
+                          success: false, 
+                          error: 'Counter element with id="counter-value" not found' 
+                        }, '*');
+                        return;
+                      }
+                      
+                      if (buttons.length < 3) {
+                        window.parent.postMessage({ 
+                          success: false, 
+                          error: 'Not enough buttons found (expected 3: Increment, Decrement, Reset)' 
+                        }, '*');
+                        return;
+                      }
+                      
+                      // Find buttons by text
+                      let incrementBtn, decrementBtn, resetBtn;
+                      buttons.forEach(btn => {
+                        const text = btn.textContent?.toLowerCase();
+                        if (text?.includes('increment')) incrementBtn = btn;
+                        else if (text?.includes('decrement')) decrementBtn = btn;
+                        else if (text?.includes('reset')) resetBtn = btn;
+                      });
+                      
+                      if (!incrementBtn || !decrementBtn || !resetBtn) {
+                        window.parent.postMessage({ 
+                          success: false, 
+                          error: 'Could not find buttons with correct text (Increment, Decrement, Reset)' 
+                        }, '*');
+                        return;
+                      }
+                      
+                      // Execute test based on input
+                      const { action, times = 1, initialValue = 0 } = testInput;
+                      
+                      // If we need to set initial value, we'll simulate it
+                      if (initialValue > 0) {
+                        for (let i = 0; i < initialValue; i++) {
+                          incrementBtn.click();
+                        }
+                      }
+                      
+                      // Perform the test action
+                      if (action === 'increment') {
+                        for (let i = 0; i < times; i++) {
+                          incrementBtn.click();
+                        }
+                      } else if (action === 'decrement') {
+                        for (let i = 0; i < times; i++) {
+                          decrementBtn.click();
+                        }
+                      } else if (action === 'reset') {
+                        resetBtn.click();
+                      }
+                      
+                      // Get final counter value
+                      const finalValue = parseInt(counterElement.textContent || '0');
+                      
+                      window.parent.postMessage({ 
+                        success: true, 
+                        result: finalValue 
+                      }, '*');
+                      
+                    } catch (err) {
+                      window.parent.postMessage({ 
+                        success: false, 
+                        error: err.message 
+                      }, '*');
+                    }
+                  }, 100);
+                  
+                } catch (err) {
+                  window.parent.postMessage({ 
+                    success: false, 
+                    error: err.message 
+                  }, '*');
+                }
+              };
+            </script>
+          </body>
+          </html>
+        `;
+
+        iframe.srcdoc = testHtml;
+
+        // Listen for test results
+        const messageHandler = (event: MessageEvent) => {
+          if (event.source === iframe.contentWindow) {
+            window.removeEventListener('message', messageHandler);
+            document.body.removeChild(iframe);
+            
+            if (event.data.success) {
+              const passed = event.data.result === testCase.expectedOutput;
+              resolve({
+                testCase,
+                passed,
+                output: event.data.result
+              });
+            } else {
+              resolve({
+                testCase,
+                passed: false,
+                output: null,
+                error: event.data.error
+              });
+            }
+          }
+        };
+
+        window.addEventListener('message', messageHandler);
+
+        // Start test after iframe loads
+        iframe.onload = () => {
+          setTimeout(() => {
+            if (iframe.contentWindow) {
+              try {
+                (iframe.contentWindow as any).runTest(testCase.input);
+              } catch (err) {
+                resolve({
+                  testCase,
+                  passed: false,
+                  output: null,
+                  error: 'Failed to execute test'
+                });
+              }
+            }
+          }, 500);
+        };
+
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          window.removeEventListener('message', messageHandler);
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+          resolve({
+            testCase,
+            passed: false,
+            output: null,
+            error: 'Test timeout'
+          });
+        }, 5000);
+
+      } catch (error) {
+        resolve({
+          testCase,
+          passed: false,
+          output: null,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    });
+  };
+
+  const runTests = useCallback(async () => {
     setIsRunning(true);
     console.log('Running tests...');
     
     try {
       const results: TestResult[] = [];
       
-      for (const testCase of question.testCases) {
-        try {
-          if (isReactExam) {
-            // For React exams, we'll simulate test results based on code analysis
-            const hasCounter = code.includes('useState') && code.includes('counter');
-            const hasIncrement = code.includes('Increment');
-            const hasDecrement = code.includes('Decrement');
-            const hasReset = code.includes('Reset');
-            
-            const passed = hasCounter && hasIncrement && hasDecrement && hasReset;
-            
-            results.push({
-              testCase,
-              passed,
-              output: passed ? testCase.expectedOutput : 'Component not properly implemented'
-            });
-          } else {
+      if (isReactExam) {
+        // Run actual React component tests
+        console.log('Running React component tests...');
+        for (const testCase of question.testCases) {
+          const result = await testReactComponent(code, testCase);
+          results.push(result);
+          console.log(`Test ${testCase.id}:`, result);
+        }
+      } else {
+        // Run JavaScript function tests
+        for (const testCase of question.testCases) {
+          try {
             const wrappedCode = `
               ${code}
               
@@ -148,14 +339,14 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
               passed,
               output
             });
+          } catch (error) {
+            results.push({
+              testCase,
+              passed: false,
+              output: null,
+              error: error instanceof Error ? error.message : 'Unknown error'
+            });
           }
-        } catch (error) {
-          results.push({
-            testCase,
-            passed: false,
-            output: null,
-            error: error instanceof Error ? error.message : 'Unknown error'
-          });
         }
       }
       
