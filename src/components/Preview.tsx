@@ -6,62 +6,238 @@ interface PreviewProps {
   css: string;
   javascript: string;
   packages: string[];
+  isReactMode?: boolean;
   onConsoleOutput: (output: {type: string, message: string, timestamp: number}) => void;
 }
 
-const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onConsoleOutput }) => {
+const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, isReactMode = true, onConsoleOutput }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const previewContent = useMemo(() => {
-    // Clean and prepare the JavaScript code
-    const cleanedJS = javascript
-      .replace(/import\s+React.*?from\s+['"]react['"];?\s*/g, '')
-      .replace(/import\s+ReactDOM.*?from\s+['"]react-dom\/client['"];?\s*/g, '')
-      .replace(/import\s+{.*?}\s+from\s+['"]react['"];?\s*/g, '')
-      .replace(/export\s+default\s+\w+;?\s*$/, '');
+    if (isReactMode) {
+      // Clean and prepare the React JavaScript code
+      const cleanedJS = javascript
+        .replace(/import\s+React.*?from\s+['"]react['"];?\s*/g, '')
+        .replace(/import\s+ReactDOM.*?from\s+['"]react-dom\/client['"];?\s*/g, '')
+        .replace(/import\s+{.*?}\s+from\s+['"]react['"];?\s*/g, '')
+        .replace(/export\s+default\s+\w+;?\s*$/, '');
 
-    return `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Preview</title>
-        <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-        <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-        <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-        <style>
-          ${css}
-          
-          /* Base iframe styles */
-          * {
-            box-sizing: border-box;
-          }
-          
-          body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            overflow-x: hidden;
-          }
+      return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>React Preview</title>
+          <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+          <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+          <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+          <style>
+            ${css}
+            
+            /* Base iframe styles */
+            * {
+              box-sizing: border-box;
+            }
+            
+            body {
+              margin: 0;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+              overflow-x: hidden;
+            }
 
-          #root {
-            min-height: 100vh;
-          }
-        </style>
-      </head>
-      <body>
-        <div id="root"></div>
-        
-        <script>
-          let isExecuted = false;
+            #root {
+              min-height: 100vh;
+            }
+          </style>
+        </head>
+        <body>
+          ${html.includes('<body>') ? html.replace(/<body[^>]*>/, '<body>').replace('</body>', '') : `<div id="root"></div>`}
           
-          function executeUserCode() {
-            if (isExecuted) return;
-            isExecuted = true;
+          <script>
+            let isExecuted = false;
             
-            // Make React hooks available globally
-            const { useState, useEffect, useContext, useReducer, useCallback, useMemo, useRef, useImperativeHandle, useLayoutEffect, useDebugValue } = React;
+            function executeUserCode() {
+              if (isExecuted) return;
+              isExecuted = true;
+              
+              // Make React hooks available globally
+              const { useState, useEffect, useContext, useReducer, useCallback, useMemo, useRef, useImperativeHandle, useLayoutEffect, useDebugValue } = React;
+              
+              // Override console methods to capture output
+              const originalConsole = window.console;
+              window.console = {
+                ...originalConsole,
+                log: (...args) => {
+                  originalConsole.log(...args);
+                  try {
+                    window.parent.postMessage({
+                      type: 'console',
+                      level: 'log',
+                      message: args.map(arg => 
+                        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                      ).join(' ')
+                    }, '*');
+                  } catch (e) {
+                    originalConsole.error('Console message error:', e);
+                  }
+                },
+                error: (...args) => {
+                  originalConsole.error(...args);
+                  try {
+                    window.parent.postMessage({
+                      type: 'console',
+                      level: 'error',
+                      message: args.map(arg => 
+                        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                      ).join(' ')
+                    }, '*');
+                  } catch (e) {
+                    originalConsole.error('Console error message error:', e);
+                  }
+                },
+                warn: (...args) => {
+                  originalConsole.warn(...args);
+                  try {
+                    window.parent.postMessage({
+                      type: 'console',
+                      level: 'warn',
+                      message: args.map(arg => 
+                        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                      ).join(' ')
+                    }, '*');
+                  } catch (e) {
+                    originalConsole.error('Console warn message error:', e);
+                  }
+                }
+              };
+
+              // Error handling
+              window.addEventListener('error', (event) => {
+                try {
+                  window.parent.postMessage({
+                    type: 'console',
+                    level: 'error',
+                    message: \`Error: \${event.message} at line \${event.lineno}\`
+                  }, '*');
+                } catch (e) {
+                  originalConsole.error('Error message posting failed:', e);
+                }
+              });
+
+              window.addEventListener('unhandledrejection', (event) => {
+                try {
+                  window.parent.postMessage({
+                    type: 'console',
+                    level: 'error',
+                    message: \`Unhandled Promise Rejection: \${event.reason}\`
+                  }, '*');
+                } catch (e) {
+                  originalConsole.error('Unhandled rejection message posting failed:', e);
+                }
+              });
+
+              // Execute the React code
+              try {
+                const code = \`${cleanedJS.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
+                
+                if (!code.trim()) {
+                  console.log('No JavaScript code to execute');
+                  return;
+                }
+                
+                // Transform JSX using Babel
+                const transformedCode = Babel.transform(code, {
+                  presets: [['react', { runtime: 'classic' }]],
+                  plugins: []
+                }).code;
+                
+                console.log('Executing React code...');
+                
+                // Execute in a safer context with React and ReactDOM available
+                const executeCode = new Function(
+                  'React', 
+                  'ReactDOM', 
+                  'useState', 
+                  'useEffect', 
+                  'useContext', 
+                  'useReducer', 
+                  'useCallback', 
+                  'useMemo', 
+                  'useRef', 
+                  'useImperativeHandle', 
+                  'useLayoutEffect', 
+                  'useDebugValue',
+                  transformedCode
+                );
+                
+                executeCode(
+                  window.React, 
+                  window.ReactDOM, 
+                  useState, 
+                  useEffect, 
+                  useContext, 
+                  useReducer, 
+                  useCallback, 
+                  useMemo, 
+                  useRef, 
+                  useImperativeHandle, 
+                  useLayoutEffect, 
+                  useDebugValue
+                );
+                
+              } catch (error) {
+                console.error('React Error:', error);
+                try {
+                  window.parent.postMessage({
+                    type: 'console',
+                    level: 'error',
+                    message: \`React Error: \${error.message}\`
+                  }, '*');
+                } catch (e) {
+                  originalConsole.error('React error message posting failed:', e);
+                }
+              }
+            }
             
+            // Wait for React to be fully loaded
+            if (window.React && window.ReactDOM && window.Babel) {
+              executeUserCode();
+            } else {
+              window.addEventListener('load', executeUserCode);
+            }
+          </script>
+        </body>
+        </html>
+      `;
+    } else {
+      // Vanilla JavaScript mode
+      return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Vanilla JS Preview</title>
+          <style>
+            ${css}
+            
+            /* Base iframe styles */
+            * {
+              box-sizing: border-box;
+            }
+            
+            body {
+              margin: 0;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+              overflow-x: hidden;
+            }
+          </style>
+        </head>
+        <body>
+          ${html.includes('<body>') ? html.replace(/<body[^>]*>/, '<body>').replace('</body>', '') : `<div id="app"></div>`}
+          
+          <script>
             // Override console methods to capture output
             const originalConsole = window.console;
             window.console = {
@@ -123,67 +299,10 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
               }
             });
 
-            window.addEventListener('unhandledrejection', (event) => {
-              try {
-                window.parent.postMessage({
-                  type: 'console',
-                  level: 'error',
-                  message: \`Unhandled Promise Rejection: \${event.reason}\`
-                }, '*');
-              } catch (e) {
-                originalConsole.error('Unhandled rejection message posting failed:', e);
-              }
-            });
-
-            // Execute the code
+            // Execute vanilla JavaScript code
             try {
-              const code = \`${cleanedJS.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
-              
-              if (!code.trim()) {
-                console.log('No JavaScript code to execute');
-                return;
-              }
-              
-              // Transform JSX using Babel
-              const transformedCode = Babel.transform(code, {
-                presets: [['react', { runtime: 'classic' }]],
-                plugins: []
-              }).code;
-              
-              console.log('Executing transformed code...');
-              
-              // Execute in a safer context with React and ReactDOM available
-              const executeCode = new Function(
-                'React', 
-                'ReactDOM', 
-                'useState', 
-                'useEffect', 
-                'useContext', 
-                'useReducer', 
-                'useCallback', 
-                'useMemo', 
-                'useRef', 
-                'useImperativeHandle', 
-                'useLayoutEffect', 
-                'useDebugValue',
-                transformedCode
-              );
-              
-              executeCode(
-                window.React, 
-                window.ReactDOM, 
-                useState, 
-                useEffect, 
-                useContext, 
-                useReducer, 
-                useCallback, 
-                useMemo, 
-                useRef, 
-                useImperativeHandle, 
-                useLayoutEffect, 
-                useDebugValue
-              );
-              
+              console.log('Executing vanilla JavaScript code...');
+              ${javascript.replace(/`/g, '\\`')}
             } catch (error) {
               console.error('JavaScript Error:', error);
               try {
@@ -196,19 +315,12 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
                 originalConsole.error('JavaScript error message posting failed:', e);
               }
             }
-          }
-          
-          // Wait for React to be fully loaded
-          if (window.React && window.ReactDOM && window.Babel) {
-            executeUserCode();
-          } else {
-            window.addEventListener('load', executeUserCode);
-          }
-        </script>
-      </body>
-      </html>
-    `;
-  }, [html, css, javascript]);
+          </script>
+        </body>
+        </html>
+      `;
+    }
+  }, [html, css, javascript, isReactMode]);
 
   const handleMessage = useCallback((event: MessageEvent) => {
     if (event.data.type === 'console') {
