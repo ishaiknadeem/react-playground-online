@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -115,7 +116,7 @@ export const useAuthStore = create<AuthState>()(
           email: foundUser.email,
           name: foundUser.name,
           role: foundUser.role,
-          organizationId: foundUser.organizationId
+          organizationId: foundUser.organizationId || undefined
         };
         
         const token = generateMockToken(user);
