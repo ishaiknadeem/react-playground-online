@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 
 interface PreviewProps {
   html: string;
@@ -12,7 +12,7 @@ interface PreviewProps {
 const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onConsoleOutput }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const createPreviewContent = useCallback(() => {
+  const previewContent = useMemo(() => {
     // Clean and prepare the JavaScript code
     const cleanedJS = javascript
       .replace(/import\s+React.*?from\s+['"]react['"];?\s*/g, '')
@@ -53,8 +53,12 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
         <div id="root"></div>
         
         <script>
-          // Wait for React to be fully loaded
-          window.addEventListener('load', function() {
+          let isExecuted = false;
+          
+          function executeUserCode() {
+            if (isExecuted) return;
+            isExecuted = true;
+            
             // Make React hooks available globally
             const { useState, useEffect, useContext, useReducer, useCallback, useMemo, useRef, useImperativeHandle, useLayoutEffect, useDebugValue } = React;
             
@@ -135,6 +139,11 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
             try {
               const code = \`${cleanedJS.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
               
+              if (!code.trim()) {
+                console.log('No JavaScript code to execute');
+                return;
+              }
+              
               // Transform JSX using Babel
               const transformedCode = Babel.transform(code, {
                 presets: [['react', { runtime: 'classic' }]],
@@ -187,41 +196,49 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, onCo
                 originalConsole.error('JavaScript error message posting failed:', e);
               }
             }
-          });
+          }
+          
+          // Wait for React to be fully loaded
+          if (window.React && window.ReactDOM && window.Babel) {
+            executeUserCode();
+          } else {
+            window.addEventListener('load', executeUserCode);
+          }
         </script>
       </body>
       </html>
     `;
   }, [html, css, javascript]);
 
+  const handleMessage = useCallback((event: MessageEvent) => {
+    if (event.data.type === 'console') {
+      onConsoleOutput({
+        type: event.data.level,
+        message: event.data.message,
+        timestamp: Date.now()
+      });
+    }
+  }, [onConsoleOutput]);
+
+  useEffect(() => {
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [handleMessage]);
+
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
-
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'console') {
-        onConsoleOutput({
-          type: event.data.level,
-          message: event.data.message,
-          timestamp: Date.now()
-        });
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
 
     // Update iframe content
     const doc = iframe.contentDocument;
     if (doc) {
       doc.open();
-      doc.write(createPreviewContent());
+      doc.write(previewContent);
       doc.close();
     }
-
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
-  }, [html, css, javascript, createPreviewContent, onConsoleOutput]);
+  }, [previewContent]);
 
   return (
     <div className="h-full bg-white">
