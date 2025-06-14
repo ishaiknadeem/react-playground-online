@@ -14,10 +14,22 @@ const Index = () => {
             <Code className="w-8 h-8 text-blue-600" />
             <span className="text-2xl font-bold text-gray-900">CodeExam</span>
           </div>
-          <div className="hidden md:flex space-x-6">
-            <Link to="/features" className="text-gray-600 hover:text-blue-600 transition-colors">Features</Link>
-            <Link to="/exams" className="text-gray-600 hover:text-blue-600 transition-colors">Exams</Link>
-            <Button variant="outline" size="sm">Sign In</Button>
+          <div className="hidden md:flex items-center space-x-8">
+            <Link to="/features" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+              Features
+            </Link>
+            <Link to="/exams" className="text-gray-600 hover:text-blue-600 transition-colors font-medium">
+              Exams
+            </Link>
+            <Button variant="outline" size="sm" className="ml-4">
+              Sign In
+            </Button>
+          </div>
+          {/* Mobile menu button - you can add this later if needed */}
+          <div className="md:hidden">
+            <Button variant="outline" size="sm">
+              Menu
+            </Button>
           </div>
         </nav>
       </header>
