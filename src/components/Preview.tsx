@@ -7,15 +7,141 @@ interface PreviewProps {
   javascript: string;
   packages: string[];
   isReactMode?: boolean;
+  isLogicMode?: boolean;
   onConsoleOutput: (output: {type: string, message: string, timestamp: number}) => void;
 }
 
-const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, isReactMode = true, onConsoleOutput }) => {
+const Preview: React.FC<PreviewProps> = ({ 
+  html, 
+  css, 
+  javascript, 
+  packages, 
+  isReactMode = true, 
+  isLogicMode = false,
+  onConsoleOutput 
+}) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const previewContent = useMemo(() => {
-    if (isReactMode) {
-      // Clean and prepare the React JavaScript code
+    if (isLogicMode) {
+      // Pure JavaScript Logic Mode
+      return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>JavaScript Logic Compiler</title>
+          <style>
+            ${css}
+            
+            /* Base iframe styles */
+            * {
+              box-sizing: border-box;
+            }
+            
+            body {
+              margin: 0;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+              overflow-x: hidden;
+            }
+          </style>
+        </head>
+        <body>
+          ${html.includes('<body>') ? html.replace(/<body[^>]*>/, '<body>').replace('</body>', '') : html}
+          
+          <script>
+            // Override console methods to capture output and display results
+            const originalConsole = window.console;
+            const results = [];
+            
+            window.console = {
+              ...originalConsole,
+              log: (...args) => {
+                originalConsole.log(...args);
+                const message = args.map(arg => 
+                  typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
+                results.push({ type: 'log', message });
+                updateResults();
+                try {
+                  window.parent.postMessage({
+                    type: 'console',
+                    level: 'log',
+                    message: message
+                  }, '*');
+                } catch (e) {
+                  originalConsole.error('Console message error:', e);
+                }
+              },
+              error: (...args) => {
+                originalConsole.error(...args);
+                const message = args.map(arg => 
+                  typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
+                results.push({ type: 'error', message });
+                updateResults();
+                try {
+                  window.parent.postMessage({
+                    type: 'console',
+                    level: 'error',
+                    message: message
+                  }, '*');
+                } catch (e) {
+                  originalConsole.error('Console error message error:', e);
+                }
+              },
+              warn: (...args) => {
+                originalConsole.warn(...args);
+                const message = args.map(arg => 
+                  typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
+                results.push({ type: 'warn', message });
+                updateResults();
+                try {
+                  window.parent.postMessage({
+                    type: 'console',
+                    level: 'warn',
+                    message: message
+                  }, '*');
+                } catch (e) {
+                  originalConsole.error('Console warn message error:', e);
+                }
+              }
+            };
+
+            function updateResults() {
+              const resultsDiv = document.getElementById('results');
+              if (resultsDiv) {
+                resultsDiv.innerHTML = results.map(result => 
+                  \`<div class="result-item">\${result.message}</div>\`
+                ).join('');
+              }
+            }
+
+            // Execute JavaScript logic code
+            try {
+              console.log('🚀 Executing JavaScript logic...');
+              ${javascript.replace(/`/g, '\\`')}
+              console.log('✅ Execution completed successfully!');
+            } catch (error) {
+              console.error('❌ JavaScript Error:', error);
+              try {
+                window.parent.postMessage({
+                  type: 'console',
+                  level: 'error',
+                  message: \`JavaScript Error: \${error.message}\`
+                }, '*');
+              } catch (e) {
+                originalConsole.error('JavaScript error message posting failed:', e);
+              }
+            }
+          </script>
+        </body>
+        </html>
+      `;
+    } else if (isReactMode) {
+      // React Mode
       const cleanedJS = javascript
         .replace(/import\s+React.*?from\s+['"]react['"];?\s*/g, '')
         .replace(/import\s+ReactDOM.*?from\s+['"]react-dom\/client['"];?\s*/g, '')
@@ -320,7 +446,7 @@ const Preview: React.FC<PreviewProps> = ({ html, css, javascript, packages, isRe
         </html>
       `;
     }
-  }, [html, css, javascript, isReactMode]);
+  }, [html, css, javascript, isReactMode, isLogicMode]);
 
   const handleMessage = useCallback((event: MessageEvent) => {
     if (event.data.type === 'console') {

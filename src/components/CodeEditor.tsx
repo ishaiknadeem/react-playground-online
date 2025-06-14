@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Play, Save, Share2, Download, Settings, Folder, FileText, Code, Palette, RotateCcw, Zap, Code2 } from 'lucide-react';
+import { Play, Save, Share2, Download, Settings, Folder, FileText, Code, Palette, RotateCcw, Zap, Code2, Function } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import MonacoEditor from '@monaco-editor/react';
 import Preview from './Preview';
 import Console from './Console';
@@ -17,6 +18,8 @@ interface FileContent {
   css: string;
   javascript: string;
 }
+
+type CompilerMode = 'react' | 'vanilla' | 'logic';
 
 const defaultFilesReact: FileContent = {
   html: `<!DOCTYPE html>
@@ -304,8 +307,125 @@ function reset() {
 createApp();`
 };
 
+const defaultFilesLogic: FileContent = {
+  html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Logic Compiler</title>
+</head>
+<body>
+    <div id="output">
+        <div style="font-family: monospace; background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px;">
+            <h3 style="margin: 0 0 15px 0; color: #333;">📊 Function Results:</h3>
+            <div id="results"></div>
+        </div>
+    </div>
+</body>
+</html>`,
+  css: `body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 20px;
+}
+
+#output {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+#results {
+  font-family: 'Courier New', monospace;
+  background: #2d3748;
+  color: #e2e8f0;
+  padding: 15px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  min-height: 200px;
+}
+
+.result-item {
+  margin: 8px 0;
+  padding: 8px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  border-left: 3px solid #4fd1c7;
+}`,
+  javascript: `// JavaScript Logic Compiler - Write your functions and logic here
+
+// Example: Mathematical functions
+function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+function isPrime(num) {
+  if (num <= 1) return false;
+  if (num <= 3) return true;
+  if (num % 2 === 0 || num % 3 === 0) return false;
+  
+  for (let i = 5; i * i <= num; i += 6) {
+    if (num % i === 0 || num % (i + 2) === 0) return false;
+  }
+  return true;
+}
+
+// Example: Array operations
+function quickSort(arr) {
+  if (arr.length <= 1) return arr;
+  
+  const pivot = arr[Math.floor(arr.length / 2)];
+  const left = arr.filter(x => x < pivot);
+  const middle = arr.filter(x => x === pivot);
+  const right = arr.filter(x => x > pivot);
+  
+  return [...quickSort(left), ...middle, ...quickSort(right)];
+}
+
+// Example: String operations
+function reverseWords(str) {
+  return str.split(' ').map(word => word.split('').reverse().join('')).join(' ');
+}
+
+// Test your functions here
+console.log('🧮 Mathematical Functions:');
+console.log('Fibonacci(10):', fibonacci(10));
+console.log('Is 17 prime?', isPrime(17));
+console.log('Is 15 prime?', isPrime(15));
+
+console.log('\\n📊 Array Operations:');
+const unsortedArray = [64, 34, 25, 12, 22, 11, 90];
+console.log('Original array:', unsortedArray);
+console.log('Sorted array:', quickSort([...unsortedArray]));
+
+console.log('\\n📝 String Operations:');
+const testString = "Hello World JavaScript";
+console.log('Original:', testString);
+console.log('Reversed words:', reverseWords(testString));
+
+// Your custom functions go here
+// Write any JavaScript logic, algorithms, data structures, etc.
+
+// Example: Custom function
+function customFunction(input) {
+  // Your logic here
+  return \`Processed: \${input}\`;
+}
+
+console.log('\\n⚡ Custom Function:');
+console.log(customFunction('Test Input'));`
+};
+
 const CodeEditor = () => {
-  const [isReactMode, setIsReactMode] = useState(true);
+  const [compilerMode, setCompilerMode] = useState<CompilerMode>('react');
   const [files, setFiles] = useState<FileContent>(defaultFilesReact);
   const [activeTab, setActiveTab] = useState<keyof FileContent>('javascript');
   const [packages, setPackages] = useState<string[]>(['react', 'react-dom']);
@@ -319,10 +439,12 @@ const CodeEditor = () => {
     const savedFiles = localStorage.getItem('code-editor-files');
     
     if (savedMode) {
-      const mode = JSON.parse(savedMode);
-      setIsReactMode(mode);
-      setFiles(mode ? defaultFilesReact : defaultFilesVanilla);
-      setPackages(mode ? ['react', 'react-dom'] : []);
+      const mode = JSON.parse(savedMode) as CompilerMode;
+      setCompilerMode(mode);
+      const defaultFiles = mode === 'react' ? defaultFilesReact : 
+                          mode === 'vanilla' ? defaultFilesVanilla : defaultFilesLogic;
+      setFiles(defaultFiles);
+      setPackages(mode === 'react' ? ['react', 'react-dom'] : []);
     } else if (savedFiles) {
       try {
         setFiles(JSON.parse(savedFiles));
@@ -334,10 +456,10 @@ const CodeEditor = () => {
 
   // Save mode and files to localStorage
   useEffect(() => {
-    localStorage.setItem('code-editor-mode', JSON.stringify(isReactMode));
+    localStorage.setItem('code-editor-mode', JSON.stringify(compilerMode));
     localStorage.setItem('code-editor-files', JSON.stringify(files));
     setPreviewKey(prev => prev + 1);
-  }, [files, isReactMode]);
+  }, [files, compilerMode]);
 
   const updateFile = useCallback((fileType: keyof FileContent, content: string) => {
     setFiles(prev => ({
@@ -346,16 +468,19 @@ const CodeEditor = () => {
     }));
   }, []);
 
-  const toggleMode = useCallback((checked: boolean) => {
-    setIsReactMode(checked);
-    setFiles(checked ? defaultFilesReact : defaultFilesVanilla);
-    setPackages(checked ? ['react', 'react-dom'] : []);
+  const changeMode = useCallback((mode: CompilerMode) => {
+    setCompilerMode(mode);
+    const defaultFiles = mode === 'react' ? defaultFilesReact : 
+                        mode === 'vanilla' ? defaultFilesVanilla : defaultFilesLogic;
+    setFiles(defaultFiles);
+    setPackages(mode === 'react' ? ['react', 'react-dom'] : []);
     setConsoleOutput([]);
     setPreviewKey(prev => prev + 1);
     
+    const modeNames = { react: 'React', vanilla: 'Vanilla JS', logic: 'JavaScript Logic' };
     toast({
-      title: `Switched to ${checked ? 'React' : 'Vanilla JS'} Mode`,
-      description: `Your editor is now configured for ${checked ? 'React development' : 'vanilla JavaScript'}.`,
+      title: `Switched to ${modeNames[mode]} Mode`,
+      description: `Your editor is now configured for ${modeNames[mode].toLowerCase()} development.`,
     });
   }, []);
 
@@ -366,28 +491,32 @@ const CodeEditor = () => {
     
     setTimeout(() => {
       setIsRunning(false);
+      const modeNames = { react: 'React', vanilla: 'vanilla JavaScript', logic: 'JavaScript logic' };
       toast({
         title: "Code Compiled",
-        description: `Your ${isReactMode ? 'React' : 'vanilla JavaScript'} code has been compiled and is running in the preview.`,
+        description: `Your ${modeNames[compilerMode]} code has been compiled and is running in the preview.`,
       });
     }, 500);
-  }, [isReactMode]);
+  }, [compilerMode]);
 
   const resetCode = useCallback(() => {
-    setFiles(isReactMode ? defaultFilesReact : defaultFilesVanilla);
+    const defaultFiles = compilerMode === 'react' ? defaultFilesReact : 
+                        compilerMode === 'vanilla' ? defaultFilesVanilla : defaultFilesLogic;
+    setFiles(defaultFiles);
     setConsoleOutput([]);
     setPreviewKey(prev => prev + 1);
+    const modeNames = { react: 'React', vanilla: 'vanilla JavaScript', logic: 'JavaScript logic' };
     toast({
       title: "Code Reset",
-      description: `Your code has been reset to the default ${isReactMode ? 'React' : 'vanilla JavaScript'} template.`,
+      description: `Your code has been reset to the default ${modeNames[compilerMode]} template.`,
     });
-  }, [isReactMode]);
+  }, [compilerMode]);
 
   const saveProject = useCallback(() => {
     const projectData = {
       files,
       packages,
-      isReactMode,
+      compilerMode,
       timestamp: Date.now()
     };
     
@@ -396,13 +525,13 @@ const CodeEditor = () => {
       title: "Project Saved",
       description: "Your project has been saved locally.",
     });
-  }, [files, packages, isReactMode]);
+  }, [files, packages, compilerMode]);
 
   const shareProject = useCallback(() => {
     const shareData = {
       files,
       packages,
-      isReactMode
+      compilerMode
     };
     
     const shareUrl = `${window.location.origin}?share=${btoa(JSON.stringify(shareData))}`;
@@ -412,7 +541,7 @@ const CodeEditor = () => {
       title: "Link Copied",
       description: "Share link has been copied to clipboard.",
     });
-  }, [files, packages, isReactMode]);
+  }, [files, packages, compilerMode]);
 
   const getFileIcon = (fileType: keyof FileContent) => {
     switch (fileType) {
@@ -429,6 +558,22 @@ const CodeEditor = () => {
       case 'css': return 'css';
       case 'javascript': return 'javascript';
       default: return 'javascript';
+    }
+  };
+
+  const getModeIcon = (mode: CompilerMode) => {
+    switch (mode) {
+      case 'react': return <Zap className="w-4 h-4 text-blue-400" />;
+      case 'vanilla': return <Code className="w-4 h-4 text-green-400" />;
+      case 'logic': return <Function className="w-4 h-4 text-purple-400" />;
+    }
+  };
+
+  const getModeColor = (mode: CompilerMode) => {
+    switch (mode) {
+      case 'react': return 'bg-blue-600 text-white';
+      case 'vanilla': return 'bg-green-600 text-white';
+      case 'logic': return 'bg-purple-600 text-white';
     }
   };
 
@@ -450,29 +595,45 @@ const CodeEditor = () => {
               </div>
             </div>
             
-            {/* Mode Toggle */}
+            {/* Mode Selector */}
             <div className="flex items-center space-x-3 bg-gray-700/50 rounded-lg px-4 py-2 border border-gray-600/50">
-              <Label htmlFor="mode-toggle" className="text-sm font-medium text-gray-300 flex items-center space-x-2">
-                <Code className="w-4 h-4" />
-                <span>Vanilla JS</span>
+              <Label className="text-sm font-medium text-gray-300 flex items-center space-x-2">
+                {getModeIcon(compilerMode)}
+                <span>Mode:</span>
               </Label>
-              <Switch
-                id="mode-toggle"
-                checked={isReactMode}
-                onCheckedChange={toggleMode}
-                className="data-[state=checked]:bg-blue-500"
-              />
-              <Label htmlFor="mode-toggle" className="text-sm font-medium text-gray-300 flex items-center space-x-2">
-                <span>React</span>
-                <Zap className="w-4 h-4 text-blue-400" />
-              </Label>
+              <Select value={compilerMode} onValueChange={changeMode}>
+                <SelectTrigger className="w-40 bg-gray-600 border-gray-500 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-700 border-gray-600">
+                  <SelectItem value="react" className="text-white hover:bg-gray-600">
+                    <div className="flex items-center space-x-2">
+                      <Zap className="w-4 h-4 text-blue-400" />
+                      <span>React</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="vanilla" className="text-white hover:bg-gray-600">
+                    <div className="flex items-center space-x-2">
+                      <Code className="w-4 h-4 text-green-400" />
+                      <span>Vanilla JS</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="logic" className="text-white hover:bg-gray-600">
+                    <div className="flex items-center space-x-2">
+                      <Function className="w-4 h-4 text-purple-400" />
+                      <span>JS Logic</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <Badge 
               variant="secondary" 
-              className={`${isReactMode ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'} border-0`}
+              className={`${getModeColor(compilerMode)} border-0`}
             >
-              {isReactMode ? 'React Mode' : 'Vanilla JS Mode'}
+              {compilerMode === 'react' ? 'React Mode' : 
+               compilerMode === 'vanilla' ? 'Vanilla JS Mode' : 'JS Logic Mode'}
             </Badge>
           </div>
           
@@ -534,7 +695,10 @@ const CodeEditor = () => {
                 >
                   {getFileIcon(fileType as keyof FileContent)}
                   <span className="capitalize font-medium">
-                    {fileType === 'javascript' ? (isReactMode ? 'React/JSX' : 'JavaScript') : fileType}
+                    {fileType === 'javascript' ? 
+                      (compilerMode === 'react' ? 'React/JSX' : 
+                       compilerMode === 'vanilla' ? 'JavaScript' : 'JS Logic') : 
+                      fileType}
                   </span>
                 </TabsTrigger>
               ))}
@@ -575,7 +739,7 @@ const CodeEditor = () => {
             <div className="bg-gray-800/70 px-6 py-3 border-b border-gray-700/50 flex items-center justify-between backdrop-blur-sm">
               <h3 className="text-sm font-medium text-gray-300 flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span>Live Preview</span>
+                <span>{compilerMode === 'logic' ? 'Function Output' : 'Live Preview'}</span>
               </h3>
               <Badge variant="outline" className="text-xs border-gray-600 text-gray-400">
                 Auto-compile enabled
@@ -588,7 +752,8 @@ const CodeEditor = () => {
               javascript={files.javascript}
               packages={packages}
               onConsoleOutput={(output) => setConsoleOutput(prev => [...prev, output])}
-              isReactMode={isReactMode}
+              isReactMode={compilerMode === 'react'}
+              isLogicMode={compilerMode === 'logic'}
             />
           </div>
 
