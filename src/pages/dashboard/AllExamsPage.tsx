@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Search, Eye, Users, Clock } from 'lucide-react';
+import { Search, Eye, Users, Clock } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import CreateExamModal from '@/components/dashboard/CreateExamModal';
 import { examApi, type ExamDetails } from '@/services/api';
 
 const AllExamsPage = () => {
@@ -81,10 +82,7 @@ const AllExamsPage = () => {
             <h1 className="text-3xl font-bold text-gray-900">All Exams</h1>
             <p className="text-gray-600">Manage and monitor all examination activities</p>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="w-4 h-4 mr-2" />
-            Create New Exam
-          </Button>
+          <CreateExamModal />
         </div>
 
         {/* Stats and Search */}

@@ -2,8 +2,9 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, FileText, Clock, CheckCircle, Plus, Send } from 'lucide-react';
+import { Users, FileText, Clock, CheckCircle, Send } from 'lucide-react';
 import DashboardLayout from './DashboardLayout';
+import CreateExamModal from './CreateExamModal';
 
 const ExaminerDashboard = () => {
   // Mock data - in production, this would come from API
@@ -30,10 +31,7 @@ const ExaminerDashboard = () => {
             <p className="text-gray-600">Manage exams and track candidate progress</p>
           </div>
           <div className="flex gap-3">
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Exam
-            </Button>
+            <CreateExamModal />
             <Button variant="outline" className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100">
               <Send className="w-4 h-4 mr-2" />
               Send Invites

@@ -2,12 +2,13 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { UserPlus, Search, MoreHorizontal } from 'lucide-react';
+import { Search, MoreHorizontal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import AddExaminerModal from '@/components/dashboard/AddExaminerModal';
 import { examinerApi, type Examiner } from '@/services/api';
 
 const ExaminersPage = () => {
@@ -46,10 +47,7 @@ const ExaminersPage = () => {
             <h1 className="text-3xl font-bold text-gray-900">Examiners</h1>
             <p className="text-gray-600">Manage your organization's examiners</p>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <UserPlus className="w-4 h-4 mr-2" />
-            Add Examiner
-          </Button>
+          <AddExaminerModal />
         </div>
 
         {/* Search and Filters */}

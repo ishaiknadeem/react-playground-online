@@ -226,5 +226,23 @@ export const examApi = {
       console.error('Failed to fetch examiner exams:', error);
       return MOCK_EXAMS.slice(0, 2); // Fallback to subset of dummy data
     }
+  },
+
+  create: async (exam: Omit<ExamDetails, 'id'>): Promise<ExamDetails> => {
+    try {
+      await delay(400);
+      // TODO: Replace with actual API call
+      // const response = await fetch('/api/exams', {
+      //   method: 'POST',
+      //   body: JSON.stringify(exam)
+      // });
+      // return response.json();
+      const newExam = { ...exam, id: Date.now().toString() };
+      MOCK_EXAMS.push(newExam);
+      return newExam;
+    } catch (error) {
+      console.error('Failed to create exam:', error);
+      throw error;
+    }
   }
 };

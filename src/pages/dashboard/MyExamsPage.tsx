@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Eye, Users, Clock, Edit, Copy } from 'lucide-react';
+import { Search, Eye, Users, Clock, Edit, Copy } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import CreateExamModal from '@/components/dashboard/CreateExamModal';
 import { examApi, type ExamDetails } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
 
@@ -61,10 +62,7 @@ const MyExamsPage = () => {
             <h1 className="text-3xl font-bold text-gray-900">My Exams</h1>
             <p className="text-gray-600">Manage your created examinations</p>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="w-4 h-4 mr-2" />
-            Create New Exam
-          </Button>
+          <CreateExamModal />
         </div>
 
         {/* Search and Quick Stats */}
@@ -158,10 +156,11 @@ const MyExamsPage = () => {
                 {searchTerm ? 'Try adjusting your search terms.' : 'Get started by creating your first exam.'}
               </p>
               {!searchTerm && (
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Your First Exam
-                </Button>
+                <CreateExamModal trigger={
+                  <Button className="bg-blue-600 hover:bg-blue-700">
+                    Create Your First Exam
+                  </Button>
+                } />
               )}
             </CardContent>
           </Card>
