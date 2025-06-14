@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 
 interface PreviewProps {
@@ -505,7 +504,7 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
         </html>
       `;
     } else {
-      // Vanilla JavaScript mode - FIXED VERSION
+      // Vanilla JavaScript mode - FIXED to properly expose functions to global scope
       console.log('Building vanilla JS preview with HTML:', html);
       console.log('Building vanilla JS preview with CSS:', css);
       console.log('Building vanilla JS preview with JS:', javascript);
@@ -664,8 +663,11 @@ console.log("✨ Try writing your own JavaScript logic above this sample code!")
                 
                 console.log('🔄 Running user JavaScript...');
                 
-                // Execute the user's JavaScript code
-                eval(userCode);
+                // Execute the user's JavaScript code in global scope
+                // This ensures functions like increment, decrement, reset are available globally
+                (function() {
+                  eval(userCode);
+                }).call(window);
                 
                 console.log('✅ JavaScript execution completed successfully!');
                 
