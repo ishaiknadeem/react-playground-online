@@ -44,17 +44,92 @@ const Preview: React.FC<PreviewProps> = ({
               margin: 0;
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
               overflow-x: hidden;
+              background: #f8f9fa;
+              padding: 20px;
+            }
+
+            .results-container {
+              max-width: 1000px;
+              margin: 0 auto;
+              background: white;
+              border-radius: 12px;
+              padding: 30px;
+              box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }
+
+            .results-header {
+              margin: 0 0 20px 0;
+              color: #333;
+              font-size: 18px;
+              font-weight: 600;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            }
+
+            .results-output {
+              font-family: 'Courier New', monospace;
+              background: #1a1a1a;
+              color: #e2e8f0;
+              padding: 20px;
+              border-radius: 8px;
+              white-space: pre-wrap;
+              overflow-x: auto;
+              min-height: 300px;
+              font-size: 14px;
+              line-height: 1.5;
+            }
+
+            .result-item {
+              margin: 4px 0;
+              padding: 4px 0;
+            }
+
+            .result-log {
+              color: #4ade80;
+            }
+
+            .result-error {
+              color: #f87171;
+            }
+
+            .result-warn {
+              color: #fbbf24;
             }
           </style>
         </head>
         <body>
-          ${html.includes('<body>') ? html.replace(/<body[^>]*>/, '<body>').replace('</body>', '') : html}
+          <div class="results-container">
+            <div class="results-header">
+              <span>📊</span>
+              <span>JavaScript Logic Execution Results</span>
+            </div>
+            <div id="results" class="results-output">
+              <div class="result-item result-log">🚀 Initializing JavaScript Logic Compiler...</div>
+            </div>
+          </div>
           
           <script>
             // Override console methods to capture output and display results
             const originalConsole = window.console;
             const results = [];
             
+            function addResult(type, message) {
+              results.push({ type, message, timestamp: Date.now() });
+              updateResults();
+              
+              // Send to parent for console panel
+              try {
+                window.parent.postMessage({
+                  type: 'console',
+                  level: type,
+                  message: message
+                }, '*');
+              } catch (e) {
+                originalConsole.error('Console message error:', e);
+              }
+            }
+
             window.console = {
               ...originalConsole,
               log: (...args) => {
@@ -62,79 +137,47 @@ const Preview: React.FC<PreviewProps> = ({
                 const message = args.map(arg => 
                   typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
                 ).join(' ');
-                results.push({ type: 'log', message });
-                updateResults();
-                try {
-                  window.parent.postMessage({
-                    type: 'console',
-                    level: 'log',
-                    message: message
-                  }, '*');
-                } catch (e) {
-                  originalConsole.error('Console message error:', e);
-                }
+                addResult('log', message);
               },
               error: (...args) => {
                 originalConsole.error(...args);
                 const message = args.map(arg => 
                   typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
                 ).join(' ');
-                results.push({ type: 'error', message });
-                updateResults();
-                try {
-                  window.parent.postMessage({
-                    type: 'console',
-                    level: 'error',
-                    message: message
-                  }, '*');
-                } catch (e) {
-                  originalConsole.error('Console error message error:', e);
-                }
+                addResult('error', message);
               },
               warn: (...args) => {
                 originalConsole.warn(...args);
                 const message = args.map(arg => 
                   typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
                 ).join(' ');
-                results.push({ type: 'warn', message });
-                updateResults();
-                try {
-                  window.parent.postMessage({
-                    type: 'console',
-                    level: 'warn',
-                    message: message
-                  }, '*');
-                } catch (e) {
-                  originalConsole.error('Console warn message error:', e);
-                }
+                addResult('warn', message);
               }
             };
 
             function updateResults() {
               const resultsDiv = document.getElementById('results');
               if (resultsDiv) {
-                resultsDiv.innerHTML = results.map(result => 
-                  \`<div class="result-item">\${result.message}</div>\`
-                ).join('');
+                resultsDiv.innerHTML = results.map(result => {
+                  const className = result.type === 'error' ? 'result-error' : 
+                                   result.type === 'warn' ? 'result-warn' : 'result-log';
+                  const timestamp = new Date(result.timestamp).toLocaleTimeString();
+                  return \`<div class="result-item \${className}">[\${timestamp}] \${result.message}</div>\`;
+                }).join('');
+                resultsDiv.scrollTop = resultsDiv.scrollHeight;
               }
             }
 
+            // Add initial message
+            addResult('log', '🚀 Starting JavaScript execution...');
+
             // Execute JavaScript logic code
             try {
-              console.log('🚀 Executing JavaScript logic...');
               ${javascript.replace(/`/g, '\\`')}
-              console.log('✅ Execution completed successfully!');
+              console.log('✅ JavaScript execution completed successfully!');
             } catch (error) {
-              console.error('❌ JavaScript Error:', error);
-              try {
-                window.parent.postMessage({
-                  type: 'console',
-                  level: 'error',
-                  message: \`JavaScript Error: \${error.message}\`
-                }, '*');
-              } catch (e) {
-                originalConsole.error('JavaScript error message posting failed:', e);
-              }
+              console.error('❌ JavaScript Error:', error.message);
+              console.error('Stack trace:', error.stack);
             }
           </script>
         </body>
