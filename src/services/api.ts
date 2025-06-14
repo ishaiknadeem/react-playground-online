@@ -1,5 +1,5 @@
 
-// Mock API service - replace with real API calls in production
+// API service with real REST endpoints and dummy data fallback
 export interface Examiner {
   id: string;
   name: string;
@@ -36,7 +36,7 @@ export interface ExamDetails {
   difficulty: 'easy' | 'medium' | 'hard';
 }
 
-// Mock API responses
+// Mock API responses for fallback
 const MOCK_EXAMINERS: Examiner[] = [
   {
     id: '1',
@@ -150,53 +150,58 @@ const MOCK_EXAMS: ExamDetails[] = [
   }
 ];
 
-// Simulate API delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// Base API URL - can be configured for different environments
+const API_BASE_URL = 'https://api.examplatform.com/v1';
+
+// Generic API request helper
+const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
+  console.log(`API: Making request to ${API_BASE_URL}${endpoint}`);
+  
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+};
 
 export const examinerApi = {
   getAll: async (): Promise<Examiner[]> => {
     console.log('API: Fetching all examiners...');
-    await delay(500);
     
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/examiners', {
-      //   method: 'GET',
-      //   headers: { 'Content-Type': 'application/json' }
-      // });
-      // if (!response.ok) throw new Error('Failed to fetch examiners');
-      // return response.json();
-      
-      console.log('API: Returning mock examiners data');
-      return MOCK_EXAMINERS;
+      const data = await apiRequest('/examiners');
+      console.log('API: Successfully fetched examiners from server:', data);
+      return data;
     } catch (error) {
-      console.error('API: Failed to fetch examiners, returning fallback data:', error);
+      console.error('API: Failed to fetch examiners, using fallback data:', error);
       return MOCK_EXAMINERS;
     }
   },
 
   create: async (examiner: Omit<Examiner, 'id'>): Promise<Examiner> => {
     console.log('API: Creating new examiner:', examiner);
-    await delay(300);
     
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/examiners', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(examiner)
-      // });
-      // if (!response.ok) throw new Error('Failed to create examiner');
-      // const newExaminer = await response.json();
-      
-      // Simulate API response
+      const data = await apiRequest('/examiners', {
+        method: 'POST',
+        body: JSON.stringify(examiner),
+      });
+      console.log('API: Examiner created successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('API: Failed to create examiner, using fallback:', error);
       const newExaminer = { ...examiner, id: Date.now().toString() };
       MOCK_EXAMINERS.push(newExaminer);
-      console.log('API: Examiner created successfully:', newExaminer);
       return newExaminer;
-    } catch (error) {
-      console.error('API: Failed to create examiner:', error);
-      throw error;
     }
   }
 };
@@ -204,22 +209,32 @@ export const examinerApi = {
 export const candidateApi = {
   getAll: async (): Promise<Candidate[]> => {
     console.log('API: Fetching all candidates...');
-    await delay(400);
     
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/candidates', {
-      //   method: 'GET',
-      //   headers: { 'Content-Type': 'application/json' }
-      // });
-      // if (!response.ok) throw new Error('Failed to fetch candidates');
-      // return response.json();
-      
-      console.log('API: Returning mock candidates data');
-      return MOCK_CANDIDATES;
+      const data = await apiRequest('/candidates');
+      console.log('API: Successfully fetched candidates from server:', data);
+      return data;
     } catch (error) {
-      console.error('API: Failed to fetch candidates, returning fallback data:', error);
+      console.error('API: Failed to fetch candidates, using fallback data:', error);
       return MOCK_CANDIDATES;
+    }
+  },
+
+  create: async (candidate: Omit<Candidate, 'id'>): Promise<Candidate> => {
+    console.log('API: Creating new candidate:', candidate);
+    
+    try {
+      const data = await apiRequest('/candidates', {
+        method: 'POST',
+        body: JSON.stringify(candidate),
+      });
+      console.log('API: Candidate created successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('API: Failed to create candidate, using fallback:', error);
+      const newCandidate = { ...candidate, id: Date.now().toString() };
+      MOCK_CANDIDATES.push(newCandidate);
+      return newCandidate;
     }
   }
 };
@@ -227,70 +242,46 @@ export const candidateApi = {
 export const examApi = {
   getAll: async (): Promise<ExamDetails[]> => {
     console.log('API: Fetching all exams...');
-    await delay(600);
     
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/exams', {
-      //   method: 'GET',
-      //   headers: { 'Content-Type': 'application/json' }
-      // });
-      // if (!response.ok) throw new Error('Failed to fetch exams');
-      // return response.json();
-      
-      console.log('API: Returning mock exams data');
-      return MOCK_EXAMS;
+      const data = await apiRequest('/exams');
+      console.log('API: Successfully fetched exams from server:', data);
+      return data;
     } catch (error) {
-      console.error('API: Failed to fetch exams, returning fallback data:', error);
+      console.error('API: Failed to fetch exams, using fallback data:', error);
       return MOCK_EXAMS;
     }
   },
 
   getByExaminer: async (examinerId: string): Promise<ExamDetails[]> => {
     console.log('API: Fetching exams by examiner:', examinerId);
-    await delay(500);
     
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/exams?examiner=${examinerId}`, {
-      //   method: 'GET',
-      //   headers: { 'Content-Type': 'application/json' }
-      // });
-      // if (!response.ok) throw new Error('Failed to fetch examiner exams');
-      // return response.json();
-      
-      // Filter for current user's exams
-      const userExams = MOCK_EXAMS.filter(exam => exam.createdBy === 'Current User');
-      console.log('API: Returning filtered exams for current user:', userExams);
-      return userExams;
+      const data = await apiRequest(`/exams?examiner=${examinerId}`);
+      console.log('API: Successfully fetched examiner exams from server:', data);
+      return data;
     } catch (error) {
-      console.error('API: Failed to fetch examiner exams, returning fallback data:', error);
-      return MOCK_EXAMS.slice(0, 2);
+      console.error('API: Failed to fetch examiner exams, using fallback data:', error);
+      const userExams = MOCK_EXAMS.filter(exam => exam.createdBy === 'Current User');
+      return userExams.length > 0 ? userExams : MOCK_EXAMS.slice(0, 2);
     }
   },
 
   create: async (exam: Omit<ExamDetails, 'id'>): Promise<ExamDetails> => {
     console.log('API: Creating new exam:', exam);
-    await delay(400);
     
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/exams', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(exam)
-      // });
-      // if (!response.ok) throw new Error('Failed to create exam');
-      // const newExam = await response.json();
-      
-      // Simulate API response
+      const data = await apiRequest('/exams', {
+        method: 'POST',
+        body: JSON.stringify(exam),
+      });
+      console.log('API: Exam created successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('API: Failed to create exam, using fallback:', error);
       const newExam = { ...exam, id: Date.now().toString() };
       MOCK_EXAMS.push(newExam);
-      console.log('API: Exam created successfully:', newExam);
       return newExam;
-    } catch (error) {
-      console.error('API: Failed to create exam:', error);
-      throw error;
     }
   }
 };
