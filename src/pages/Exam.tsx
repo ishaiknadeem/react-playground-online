@@ -130,22 +130,24 @@ console.log('Test 2:', twoSum([3,2,4], 6)); // Expected: [1,2]`,
     console.log('Exam started at:', new Date().toISOString());
   };
 
-  const handleSubmitExam = (code: any, testResults: any) => {
+  const handleSubmitExam = (code: any, testResults: any, tabSwitchData: any) => {
     setExamState('submitted');
     const endTime = new Date();
-    const timeTaken = startTime ? (endTime.getTime() - startTime.getTime()) / 1000 / 60 : 0; // minutes
+    const timeTaken = startTime ? (endTime.getTime() - startTime.getTime()) / 1000 / 60 : 0;
     
     setSubmissionData({
       code,
       testResults,
+      tabSwitchData,
       timeTaken: Math.round(timeTaken * 100) / 100,
       submittedAt: endTime.toISOString()
     });
     
-    console.log('Exam submitted:', {
+    console.log('Exam submitted with tab tracking:', {
       questionId,
       code,
       testResults,
+      tabSwitchData,
       timeTaken
     });
   };

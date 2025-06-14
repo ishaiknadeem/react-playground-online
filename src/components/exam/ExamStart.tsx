@@ -35,45 +35,40 @@ const ExamStart: React.FC<ExamStartProps> = ({ question, onStart }) => {
             </div>
           </div>
           <CardTitle className="text-3xl font-bold text-white mb-2">
-            {question.title}
+            Coding Challenge Ready
           </CardTitle>
+          <p className="text-gray-300">
+            Question details will be revealed once you start the exam
+          </p>
         </CardHeader>
         
         <CardContent className="space-y-6">
-          <div className="bg-gray-700/50 rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-3 text-blue-400">Problem Description</h3>
-            <div className="text-gray-300 whitespace-pre-line leading-relaxed">
-              {question.description}
-            </div>
-          </div>
-
-          <div className="bg-gray-700/50 rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-3 text-green-400">Test Cases</h3>
-            <div className="space-y-2">
-              {question.testCases.filter(tc => !tc.isHidden).map((testCase, index) => (
-                <div key={testCase.id} className="text-sm">
-                  <span className="text-gray-400">Test {index + 1}:</span>
-                  <span className="text-gray-300 ml-2">{testCase.description}</span>
-                </div>
-              ))}
-              {question.testCases.some(tc => tc.isHidden) && (
-                <div className="text-sm text-yellow-400">
-                  + Additional hidden test cases
-                </div>
-              )}
-            </div>
-          </div>
-
           <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
             <div className="flex items-start space-x-3">
               <AlertCircle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
               <div className="text-yellow-100">
-                <p className="font-semibold mb-1">Important Instructions:</p>
+                <p className="font-semibold mb-1">Exam Security Notice:</p>
                 <ul className="text-sm space-y-1 list-disc list-inside text-yellow-200">
-                  <li>Once you start, the timer cannot be paused</li>
+                  <li>Once started, the timer cannot be paused</li>
+                  <li>Tab switching is monitored and will affect your evaluation</li>
+                  <li>Multiple tab switches will trigger warnings</li>
                   <li>Your code will be auto-saved as you type</li>
                   <li>Test your solution before submitting</li>
                   <li>You can submit early or wait for time to expire</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+              <div className="text-red-100">
+                <p className="font-semibold mb-1">⚠️ Anti-Cheating Measures:</p>
+                <ul className="text-sm space-y-1 list-disc list-inside text-red-200">
+                  <li>Tab switching behavior is tracked and recorded</li>
+                  <li>Excessive tab switches may result in exam termination</li>
+                  <li>Focus on this window throughout the exam</li>
                 </ul>
               </div>
             </div>

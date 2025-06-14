@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Clock, Send, Play, CheckCircle, XCircle } from 'lucide-react';
+import { Clock, Send, Play, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,7 +12,7 @@ import { toast } from '@/hooks/use-toast';
 interface ExamInterfaceProps {
   question: Question;
   startTime: Date;
-  onSubmit: (code: any, testResults: any) => void;
+  onSubmit: (code: any, testResults: any, tabSwitchData: any) => void;
 }
 
 interface TestResult {
@@ -22,12 +22,63 @@ interface TestResult {
   error?: string;
 }
 
+interface TabSwitchData {
+  totalSwitches: number;
+  switchTimestamps: string[];
+  warningsShown: number;
+}
+
 const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSubmit }) => {
-  const [timeLeft, setTimeLeft] = useState(question.timeLimit * 60); // Convert to seconds
+  const [timeLeft, setTimeLeft] = useState(question.timeLimit * 60);
   const [code, setCode] = useState(question.boilerplate.javascript);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [tabSwitchData, setTabSwitchData] = useState<TabSwitchData>({
+    totalSwitches: 0,
+    switchTimestamps: [],
+    warningsShown: 0
+  });
+  const [showTabWarning, setShowTabWarning] = useState(false);
+
+  // Tab switch detection
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && !hasSubmitted) {
+        const now = new Date().toISOString();
+        
+        setTabSwitchData(prev => {
+          const newData = {
+            totalSwitches: prev.totalSwitches + 1,
+            switchTimestamps: [...prev.switchTimestamps, now],
+            warningsShown: prev.warningsShown
+          };
+          
+          console.log('Tab switch detected:', newData);
+          
+          // Show warning for every 3rd tab switch
+          if (newData.totalSwitches % 3 === 0) {
+            setShowTabWarning(true);
+            newData.warningsShown++;
+            
+            toast({
+              title: "⚠️ Tab Switch Warning",
+              description: `You have switched tabs ${newData.totalSwitches} times. This affects your evaluation.`,
+              variant: "destructive"
+            });
+            
+            // Hide warning after 5 seconds
+            setTimeout(() => setShowTabWarning(false), 5000);
+          }
+          
+          return newData;
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [hasSubmitted]);
 
   // Timer effect
   useEffect(() => {
@@ -57,16 +108,13 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
     console.log('Running tests...');
     
     try {
-      // Create a safe evaluation environment
       const results: TestResult[] = [];
       
       for (const testCase of question.testCases) {
         try {
-          // Create a function wrapper for the user's code
           const wrappedCode = `
             ${code}
             
-            // Return the function result
             (function() {
               const input = ${JSON.stringify(testCase.input)};
               return twoSum(input.nums, input.target);
@@ -118,13 +166,13 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
     if (hasSubmitted) return;
     
     setHasSubmitted(true);
-    onSubmit(code, testResults);
+    onSubmit(code, testResults, tabSwitchData);
     
     toast({
       title: "Solution Submitted",
       description: "Your solution has been submitted successfully!"
     });
-  }, [code, testResults, hasSubmitted, onSubmit]);
+  }, [code, testResults, tabSwitchData, hasSubmitted, onSubmit]);
 
   const getTimeColor = () => {
     const percentage = timeLeft / (question.timeLimit * 60);
@@ -135,12 +183,36 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      {/* Tab Switch Warning Overlay */}
+      {showTabWarning && (
+        <div className="fixed inset-0 bg-red-900/80 flex items-center justify-center z-50">
+          <Card className="bg-red-800 border-red-600 text-white max-w-md">
+            <CardContent className="p-6 text-center">
+              <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold mb-2">Tab Switch Detected!</h2>
+              <p className="text-red-200 mb-4">
+                You have switched tabs {tabSwitchData.totalSwitches} times. 
+                This behavior is being tracked and will affect your evaluation.
+              </p>
+              <p className="text-sm text-red-300">
+                Please focus on this window to avoid further warnings.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Header */}
       <div className="border-b border-gray-700/50 bg-gray-900/80 backdrop-blur-md px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center space-x-4">
             <h1 className="text-xl font-bold text-white">{question.title}</h1>
             <Badge className="bg-blue-600">{question.difficulty}</Badge>
+            {tabSwitchData.totalSwitches > 0 && (
+              <Badge className="bg-red-600">
+                Tab Switches: {tabSwitchData.totalSwitches}
+              </Badge>
+            )}
           </div>
           
           <div className="flex items-center space-x-4">
