@@ -1,6 +1,6 @@
-
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '@/store/store';
+import { getMyExams, createExam } from '@/store/actions/examActions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,22 +12,23 @@ import CreateExamModal from '@/components/dashboard/CreateExamModal';
 import AddCandidateModal from '@/components/dashboard/AddCandidateModal';
 import SendInvitesModal from '@/components/dashboard/SendInvitesModal';
 import ViewExamModal from '@/components/dashboard/ViewExamModal';
-import { examApi, type ExamDetails } from '@/services/api';
-import { useAuthStore } from '@/store/authStore';
+import { type ExamDetails } from '@/services/api';
 
 const MyExamsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const { user } = useAuthStore();
+  const dispatch = useAppDispatch();
+  const { myExams: exams, loading, error } = useAppSelector(state => state.exam);
+  const { user } = useAppSelector(state => state.auth);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  const { data: exams, isLoading, error } = useQuery({
-    queryKey: ['my-exams', user?.id],
-    queryFn: () => examApi.getByExaminer(user?.id || ''),
-  });
+  useEffect(() => {
+    if (user?.id) {
+      dispatch(getMyExams(user.id));
+    }
+  }, [dispatch, user?.id]);
 
-  const duplicateExamMutation = useMutation({
-    mutationFn: async (exam: ExamDetails) => {
+  const handleDuplicateExam = async (exam: any) => {
+    try {
       const duplicatedExam = {
         ...exam,
         title: `${exam.title} (Copy)`,
@@ -37,27 +38,20 @@ const MyExamsPage = () => {
         completedSubmissions: 0,
       };
       delete (duplicatedExam as any).id;
-      return examApi.create(duplicatedExam);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-exams'] });
+      
+      await dispatch(createExam(duplicatedExam));
       toast({
         title: 'Success',
         description: 'Exam duplicated successfully',
       });
-    },
-    onError: () => {
+    } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to duplicate exam',
         variant: 'destructive',
       });
-    },
-  });
-
-  console.log('My Exams Page - Data:', exams);
-  console.log('My Exams Page - Loading:', isLoading);
-  console.log('My Exams Page - Error:', error);
+    }
+  };
 
   const filteredExams = exams?.filter(exam =>
     exam.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -86,11 +80,7 @@ const MyExamsPage = () => {
     });
   };
 
-  const handleDuplicateExam = (exam: ExamDetails) => {
-    duplicateExamMutation.mutate(exam);
-  };
-
-  if (isLoading) {
+  if (loading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
@@ -204,7 +194,6 @@ const MyExamsPage = () => {
                     size="sm" 
                     variant="outline"
                     onClick={() => handleDuplicateExam(exam)}
-                    disabled={duplicateExamMutation.isPending}
                   >
                     <Copy className="w-4 h-4" />
                   </Button>

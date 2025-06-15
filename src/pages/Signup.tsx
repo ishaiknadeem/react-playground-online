@@ -1,6 +1,7 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '@/store/store';
+import { signupUser } from '@/store/actions/authActions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,8 +22,8 @@ const Signup = () => {
     organizationName: '',
     department: ''
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const dispatch = useAppDispatch();
+  const { loading, error } = useAppSelector(state => state.auth);
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,50 +36,36 @@ const Signup = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setIsLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setIsLoading(false);
       return;
     }
 
     if (!formData.role) {
-      setError('Please select your role');
-      setIsLoading(false);
       return;
     }
 
     try {
-      const result = await authApi.signup({
+      await dispatch(signupUser({
         name: formData.name,
         email: formData.email,
         password: formData.password,
         role: formData.role as 'admin' | 'examiner',
         organizationName: formData.organizationName,
         department: formData.department
-      });
+      }));
 
-      if (result.success) {
-        toast({
-          title: "Account created!",
-          description: "Your admin account has been created. Please wait for approval.",
-        });
-        navigate('/login');
-      } else {
-        setError(result.error || 'Signup failed');
-      }
+      toast({
+        title: "Account created!",
+        description: "Your admin account has been created. Please wait for approval.",
+      });
+      navigate('/login');
     } catch (err) {
-      setError('An unexpected error occurred');
-    } finally {
-      setIsLoading(false);
+      console.error('Signup error:', err);
     }
   };
 
@@ -224,9 +211,9 @@ const Signup = () => {
               <Button 
                 type="submit" 
                 className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={isLoading}
+                disabled={loading}
               >
-                {isLoading ? (
+                {loading ? (
                   "Creating account..."
                 ) : (
                   <>

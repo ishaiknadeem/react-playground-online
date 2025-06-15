@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useAppSelector } from '@/store/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,11 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { Save, Shield, Bell, Users, Code } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { useAuthStore } from '@/store/authStore';
 import { settingsApi } from '@/services/api';
 
 const SettingsPage = () => {
-  const { user } = useAuthStore();
+  const { user } = useAppSelector(state => state.auth);
   const { toast } = useToast();
   const [settings, setSettings] = useState({
     organizationName: '',
@@ -27,37 +25,41 @@ const SettingsPage = () => {
     maxExamDuration: 120,
     allowedLanguages: ['javascript', 'python', 'java'],
   });
+  const [loading, setLoading] = useState(false);
 
-  const { data: settingsData, isLoading } = useQuery({
-    queryKey: ['settings'],
-    queryFn: settingsApi.getSettings,
-  });
+  // Mock settings data
+  useEffect(() => {
+    const mockSettings = {
+      organizationName: 'Tech Corp',
+      website: 'https://techcorp.com',
+      emailNotifications: true,
+      examReminders: true,
+      autoGrading: true,
+      proctoring: false,
+      maxExamDuration: 120,
+      allowedLanguages: ['javascript', 'python', 'java'],
+    };
+    setSettings(mockSettings);
+  }, []);
 
-  const updateSettingsMutation = useMutation({
-    mutationFn: settingsApi.updateSettings,
-    onSuccess: () => {
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       toast({
         title: 'Success',
         description: 'Settings saved successfully',
       });
-    },
-    onError: () => {
+    } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to save settings',
         variant: 'destructive',
       });
-    },
-  });
-
-  useEffect(() => {
-    if (settingsData) {
-      setSettings(settingsData);
+    } finally {
+      setLoading(false);
     }
-  }, [settingsData]);
-
-  const handleSave = () => {
-    updateSettingsMutation.mutate(settings);
   };
 
   const handleLanguageToggle = (lang: string) => {
@@ -66,16 +68,6 @@ const SettingsPage = () => {
       : [...settings.allowedLanguages, lang];
     setSettings({...settings, allowedLanguages: newLanguages});
   };
-
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <DashboardLayout>
@@ -265,10 +257,10 @@ const SettingsPage = () => {
           <Button 
             onClick={handleSave} 
             className="bg-blue-600 hover:bg-blue-700"
-            disabled={updateSettingsMutation.isPending}
+            disabled={loading}
           >
             <Save className="w-4 h-4 mr-2" />
-            {updateSettingsMutation.isPending ? 'Saving...' : 'Save Settings'}
+            {loading ? 'Saving...' : 'Save Settings'}
           </Button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useExaminers } from '@/hooks/useExaminers';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,61 +22,40 @@ import { examinerApi, type Examiner } from '@/services/api';
 const ExaminersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { examiners, loading, error, updateExaminer, deleteExaminer } = useExaminers();
 
-  const { data: examiners, isLoading, error } = useQuery({
-    queryKey: ['examiners'],
-    queryFn: examinerApi.getAll,
-  });
-
-  const updateExaminerMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Examiner> }) =>
-      examinerApi.update(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['examiners'] });
+  const handleToggleStatus = async (examiner: any) => {
+    const newStatus = examiner.status === 'active' ? 'inactive' : 'active';
+    try {
+      await updateExaminer(examiner.id, { status: newStatus });
       toast({
         title: 'Success',
         description: 'Examiner updated successfully',
       });
-    },
-    onError: () => {
+    } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to update examiner',
         variant: 'destructive',
       });
-    },
-  });
-
-  const deleteExaminerMutation = useMutation({
-    mutationFn: examinerApi.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['examiners'] });
-      toast({
-        title: 'Success',
-        description: 'Examiner deleted successfully',
-      });
-    },
-    onError: () => {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete examiner',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const handleToggleStatus = (examiner: Examiner) => {
-    const newStatus = examiner.status === 'active' ? 'inactive' : 'active';
-    updateExaminerMutation.mutate({
-      id: examiner.id,
-      updates: { status: newStatus }
-    });
+    }
   };
 
-  const handleDeleteExaminer = (examinerId: string) => {
+  const handleDeleteExaminer = async (examinerId: string) => {
     if (confirm('Are you sure you want to delete this examiner?')) {
-      deleteExaminerMutation.mutate(examinerId);
+      try {
+        await deleteExaminer(examinerId);
+        toast({
+          title: 'Success',
+          description: 'Examiner deleted successfully',
+        });
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to delete examiner',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -84,7 +64,7 @@ const ExaminersPage = () => {
     examiner.email.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
-  if (isLoading) {
+  if (loading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
