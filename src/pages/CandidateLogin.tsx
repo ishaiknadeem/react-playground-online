@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -131,7 +130,7 @@ const CandidateLogin = () => {
               
               <div className="text-center">
                 <Link 
-                  to="/login" 
+                  to="/" 
                   className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
                 >
                   Are you an admin or examiner? Click here
