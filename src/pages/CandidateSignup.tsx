@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Code2, User, Lock, Mail, ArrowRight } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { authApi } from '@/services/authApi';
 
 const CandidateSignup = () => {
   const [formData, setFormData] = useState({
@@ -42,14 +43,22 @@ const CandidateSignup = () => {
     }
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Account created!",
-        description: "Welcome to CodePractice. You can now sign in.",
+      const result = await authApi.signup({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: 'candidate'
       });
-      navigate('/candidate-login');
+
+      if (result.success) {
+        toast({
+          title: "Account created!",
+          description: "Welcome to CodePractice. You can now sign in.",
+        });
+        navigate('/candidate-login');
+      } else {
+        setError(result.error || 'Signup failed');
+      }
     } catch (err) {
       setError('An unexpected error occurred');
     } finally {

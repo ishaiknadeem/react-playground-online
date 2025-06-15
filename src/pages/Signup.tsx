@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Shield, User, Lock, Mail, Building, ArrowRight } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { authApi } from '@/services/authApi';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -18,7 +19,6 @@ const Signup = () => {
     confirmPassword: '',
     role: '',
     organizationName: '',
-    organizationId: '',
     department: ''
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -57,14 +57,24 @@ const Signup = () => {
     }
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Account created!",
-        description: "Your admin account has been created. Please wait for approval.",
+      const result = await authApi.signup({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role as 'admin' | 'examiner',
+        organizationName: formData.organizationName,
+        department: formData.department
       });
-      navigate('/login');
+
+      if (result.success) {
+        toast({
+          title: "Account created!",
+          description: "Your admin account has been created. Please wait for approval.",
+        });
+        navigate('/login');
+      } else {
+        setError(result.error || 'Signup failed');
+      }
     } catch (err) {
       setError('An unexpected error occurred');
     } finally {

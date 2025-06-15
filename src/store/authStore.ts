@@ -1,6 +1,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { authApi } from '@/services/authApi';
 
 export interface User {
   id: string;
@@ -18,58 +19,6 @@ interface AuthState {
   logout: () => void;
   checkAuth: () => void;
 }
-
-// Dummy credentials for testing
-const DUMMY_ADMIN_USERS = [
-  {
-    id: '1',
-    email: 'admin@company.com',
-    password: 'admin123',
-    name: 'Admin User',
-    role: 'admin' as const,
-    organizationId: 'org1'
-  },
-  {
-    id: '2',
-    email: 'hr@company.com',
-    password: 'hr123',
-    name: 'HR Manager',
-    role: 'examiner' as const,
-    organizationId: 'org1'
-  }
-];
-
-const DUMMY_CANDIDATES = [
-  {
-    id: 'c1',
-    email: 'john@example.com',
-    password: 'candidate123',
-    name: 'John Doe',
-    role: 'candidate' as const
-  },
-  {
-    id: 'c2',
-    email: 'jane@example.com',
-    password: 'candidate123',
-    name: 'Jane Smith',
-    role: 'candidate' as const
-  }
-];
-
-// Mock JWT token generation
-const generateMockToken = (user: Omit<User, 'id'> & { id: string }) => {
-  const payload = {
-    sub: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    organizationId: user.organizationId,
-    exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
-  };
-  
-  // In production, this would be a real JWT
-  return btoa(JSON.stringify(payload));
-};
 
 // Mock token validation
 const validateToken = (token: string): User | null => {
@@ -101,33 +50,24 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       login: async (email: string, password: string, userType: 'admin' | 'candidate') => {
-        const users = userType === 'admin' ? DUMMY_ADMIN_USERS : DUMMY_CANDIDATES;
-        
-        const foundUser = users.find(
-          u => u.email === email && u.password === password
-        );
-        
-        if (!foundUser) {
-          return { success: false, error: 'Invalid email or password' };
+        try {
+          const result = await authApi.login({ email, password }, userType);
+          
+          if (result.success && result.token && result.user) {
+            set({
+              user: result.user,
+              token: result.token,
+              isAuthenticated: true
+            });
+            
+            return { success: true };
+          } else {
+            return { success: false, error: result.error || 'Login failed' };
+          }
+        } catch (error) {
+          console.error('Login error:', error);
+          return { success: false, error: 'An unexpected error occurred' };
         }
-        
-        const user: User = {
-          id: foundUser.id,
-          email: foundUser.email,
-          name: foundUser.name,
-          role: foundUser.role,
-          organizationId: 'organizationId' in foundUser ? foundUser.organizationId : undefined
-        };
-        
-        const token = generateMockToken(user);
-        
-        set({
-          user,
-          token,
-          isAuthenticated: true
-        });
-        
-        return { success: true };
       },
 
       logout: () => {
