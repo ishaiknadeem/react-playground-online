@@ -1,10 +1,9 @@
 
-import React, { useId } from 'react';
+import React, { useId, useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { ARIA_LABELS } from '@/utils/accessibility';
-import { useDebounce } from '@/hooks/usePerformance';
 
 interface ExamSearchProps {
   searchTerm: string;
@@ -13,10 +12,26 @@ interface ExamSearchProps {
 
 const ExamSearch: React.FC<ExamSearchProps> = React.memo(({ searchTerm, onSearchChange }) => {
   const searchId = useId();
-  const debouncedSearch = useDebounce(onSearchChange, 300);
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
+
+  // Debounce search with cleanup
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (localSearchTerm !== searchTerm) {
+        onSearchChange(localSearchTerm);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [localSearchTerm, onSearchChange, searchTerm]);
+
+  // Update local state when external searchTerm changes
+  useEffect(() => {
+    setLocalSearchTerm(searchTerm);
+  }, [searchTerm]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    debouncedSearch(e.target.value);
+    setLocalSearchTerm(e.target.value);
   };
 
   return (
@@ -30,7 +45,7 @@ const ExamSearch: React.FC<ExamSearchProps> = React.memo(({ searchTerm, onSearch
           <Input
             id={searchId}
             placeholder="Search my exams..."
-            defaultValue={searchTerm}
+            value={localSearchTerm}
             onChange={handleSearchChange}
             className="pl-10"
             aria-label={ARIA_LABELS.dashboard.searchExams}

@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/store/store';
 import { getMyExams, createExam } from '@/store/actions/examActions';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users } from 'lucide-react';
+import { Users, AlertCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import CreateExamModal from '@/components/dashboard/CreateExamModal';
@@ -15,9 +15,11 @@ import ExamSearch from '@/components/dashboard/ExamSearch';
 import MyExamsStats from '@/components/dashboard/MyExamsStats';
 import ExamCard from '@/components/dashboard/ExamCard';
 import { type ExamDetails } from '@/services/api';
+import { logger } from '@/utils/logger';
 
 const MyExamsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
   const dispatch = useAppDispatch();
   const { myExams: exams, loading, error } = useAppSelector(state => state.exam);
   const { user } = useAppSelector(state => state.auth);
@@ -26,21 +28,39 @@ const MyExamsPage = () => {
   // Memoized fetch function to prevent recreation on every render
   const fetchExams = useCallback(() => {
     if (user?.id) {
-      console.log('Fetching exams for user:', user.id);
-      dispatch(getMyExams(user.id));
+      logger.info('Fetching exams for user', { userId: user.id, retryCount });
+      dispatch(getMyExams(user.id))
+        .catch((err: any) => {
+          logger.error('Failed to fetch exams', err, { userId: user.id, retryCount });
+          if (retryCount < 3) {
+            setRetryCount(prev => prev + 1);
+          }
+        });
     }
-  }, [dispatch, user?.id]);
+  }, [dispatch, user?.id, retryCount]);
 
-  // Fixed useEffect with proper dependencies
+  // Auto-retry logic with backoff
   useEffect(() => {
-    console.log('MyExamsPage mounted, user:', user?.id);
-    if (user?.id && exams.length === 0 && !loading) {
+    if (retryCount > 0 && retryCount < 3) {
+      const timeoutId = setTimeout(() => {
+        fetchExams();
+      }, Math.pow(2, retryCount) * 1000); // Exponential backoff
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [retryCount, fetchExams]);
+
+  // Initial fetch effect
+  useEffect(() => {
+    logger.info('MyExamsPage mounted', { userId: user?.id, examsLength: exams.length });
+    if (user?.id && exams.length === 0 && !loading && !error) {
       fetchExams();
     }
-  }, [user?.id, exams.length, loading, fetchExams]);
+  }, [user?.id, exams.length, loading, error, fetchExams]);
 
   const handleDuplicateExam = async (exam: ExamDetails) => {
     try {
+      logger.info('Duplicating exam', { examId: exam.id, title: exam.title });
       const duplicatedExam = {
         ...exam,
         title: `${exam.title} (Copy)`,
@@ -56,8 +76,9 @@ const MyExamsPage = () => {
         title: 'Success',
         description: 'Exam duplicated successfully',
       });
+      logger.info('Exam duplicated successfully', { originalId: exam.id });
     } catch (error) {
-      console.error('Error duplicating exam:', error);
+      logger.error('Error duplicating exam', error as Error, { examId: exam.id });
       toast({
         title: 'Error',
         description: 'Failed to duplicate exam',
@@ -67,10 +88,17 @@ const MyExamsPage = () => {
   };
 
   const handleEditExam = (examId: string) => {
+    logger.info('Edit exam requested', { examId });
     toast({
       title: 'Feature Coming Soon',
       description: 'Edit exam functionality will be implemented',
     });
+  };
+
+  const handleRetry = () => {
+    logger.info('Manual retry requested');
+    setRetryCount(0);
+    fetchExams();
   };
 
   const filteredExams = exams?.filter(exam =>
@@ -78,6 +106,7 @@ const MyExamsPage = () => {
     exam.description.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
+  // Loading state
   if (loading) {
     return (
       <DashboardLayout>
@@ -88,16 +117,32 @@ const MyExamsPage = () => {
     );
   }
 
+  // Error state with retry options
   if (error) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
           <Card className="w-full max-w-md">
             <CardContent className="p-6 text-center">
-              <p className="text-red-600 mb-4">Failed to load exams</p>
-              <Button onClick={fetchExams} variant="outline">
-                Try Again
-              </Button>
+              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to load exams</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                {retryCount >= 3 
+                  ? 'Multiple attempts failed. Please check your connection and try again.'
+                  : 'There was an error loading your exams. Please try again.'
+                }
+              </p>
+              <div className="flex gap-2 justify-center">
+                <Button onClick={handleRetry} variant="outline" disabled={loading}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Try Again
+                </Button>
+                {retryCount >= 3 && (
+                  <Button onClick={() => window.location.reload()} variant="default">
+                    Reload Page
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -144,7 +189,7 @@ const MyExamsPage = () => {
         </div>
 
         {/* Empty State */}
-        {filteredExams.length === 0 && !loading && (
+        {filteredExams.length === 0 && !loading && !error && (
           <Card>
             <CardContent className="p-8 md:p-12 text-center">
               <div className="text-gray-400 mb-4">
