@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Camera, Monitor, Lock, AlertTriangle, Eye, X, Move } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -117,7 +116,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     try {
       console.log('Requesting screen share...');
       const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { mediaSource: 'screen' },
+        video: true,
         audio: true
       });
       
