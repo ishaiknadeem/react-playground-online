@@ -178,7 +178,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       if (error instanceof Error && error.name === 'NotAllowedError') {
         toast({
           title: "Screen Recording Required",
-          description: "Screen recording is mandatory for this exam. Please allow screen sharing and refresh the page.",
+          description: "Screen recording is mandatory for this exam. Please allow screen sharing when prompted again in 3 seconds.",
           variant: "destructive"
         });
       }
@@ -189,6 +189,14 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
         severity: 'high',
         description: 'Screen recording permission denied or failed to start'
       });
+
+      // Retry after 3 seconds when initially denied
+      setTimeout(() => {
+        if (!screenStream.current) {
+          console.log('Retrying screen recording after denial...');
+          initializeScreenRecording();
+        }
+      }, 3000);
     }
   }, [handleViolationInternal]);
 
