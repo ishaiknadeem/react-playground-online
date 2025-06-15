@@ -1,4 +1,3 @@
-
 import {
   REQUEST_LOGIN,
   REQUEST_SIGNUP,
@@ -259,5 +258,7 @@ export const checkAuth = () => (dispatch: any) => {
   const token = sessionStorage.getItem('userToken');
   if (token) {
     dispatch({ type: 'SUCCESS_CHECK_AUTH', payload: { token } });
+  } else {
+    dispatch({ type: 'SET_AUTH_INITIALIZED' });
   }
 };

@@ -2,47 +2,87 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, User, Lock, ArrowRight } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { loginUser } from '@/store/actions/authActions';
-import { toast } from '@/hooks/use-toast';
+import { validateEmail, validateField } from '@/utils/validation';
+import { showErrorToast, showSuccessToast } from '@/utils/errorHandler';
+import FormField from '@/components/common/FormField';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string[] }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const dispatch = useAppDispatch();
   const { loading, error } = useAppSelector(state => state.auth);
   const navigate = useNavigate();
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({ ...prev, [name]: [] }));
+    }
+  };
+
+  const validateForm = () => {
+    const errors: { [key: string]: string[] } = {};
+    
+    const emailValidation = validateEmail(formData.email);
+    if (!emailValidation.isValid) {
+      errors.email = emailValidation.errors;
+    }
+    
+    const passwordValidation = validateField(formData.password, { required: true });
+    if (!passwordValidation.isValid) {
+      errors.password = passwordValidation.errors;
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login: Form submitted with email:', email);
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    console.log('Login: Form submitted with email:', formData.email);
 
     try {
       console.log('Login: Dispatching loginUser action');
-      const result = await dispatch(loginUser({ email, password }, 'admin'));
+      const result = await dispatch(loginUser({ 
+        email: formData.email, 
+        password: formData.password 
+      }, 'admin'));
+      
       console.log('Login: Login result:', result);
       
-      // Check if login was successful (either API or fallback)
       if (result) {
         console.log('Login: Success, showing toast and navigating');
-        toast({
-          title: "Welcome back!",
-          description: "Successfully logged in to your dashboard",
-        });
+        showSuccessToast("Welcome back!", "Successfully logged in to your dashboard");
         navigate('/dashboard');
-      } else {
-        console.log('Login: No result returned from loginUser');
       }
     } catch (err) {
       console.error('Login: Login error caught:', err);
-      // Error is already handled by the reducer and displayed in the UI
+      showErrorToast('Login failed. Please check your credentials.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  const isFormDisabled = loading || isSubmitting;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
@@ -67,50 +107,44 @@ const Login = () => {
             <CardContent className="space-y-4">
               {error && (
                 <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>{error.message}</AlertDescription>
                 </Alert>
               )}
               
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
+              <FormField
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
+                required
+                errors={fieldErrors.email}
+                disabled={isFormDisabled}
+                icon={<User className="w-4 h-4" />}
+              />
               
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
+              <FormField
+                label="Password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                required
+                errors={fieldErrors.password}
+                disabled={isFormDisabled}
+                icon={<Lock className="w-4 h-4" />}
+              />
             </CardContent>
             
             <CardFooter className="flex flex-col space-y-4">
               <Button 
                 type="submit" 
                 className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={loading}
+                disabled={isFormDisabled}
               >
-                {loading ? (
+                {isFormDisabled ? (
                   "Signing in..."
                 ) : (
                   <>

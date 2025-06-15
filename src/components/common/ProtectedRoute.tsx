@@ -2,6 +2,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAppSelector } from '@/store/store';
+import LoadingSpinner from './LoadingSpinner';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -14,10 +15,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requireAuth = true,
   allowedRoles = [],
-  redirectTo = '/login'
+  redirectTo = '/'
 }) => {
-  const { isAuthenticated, user } = useAppSelector(state => state.auth);
+  const { isAuthenticated, user, loading, initialized } = useAppSelector(state => state.auth);
   const location = useLocation();
+
+  // Show loading while auth is being initialized
+  if (!initialized || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Verifying access..." />
+      </div>
+    );
+  }
 
   if (requireAuth && !isAuthenticated) {
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
