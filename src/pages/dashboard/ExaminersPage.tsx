@@ -1,6 +1,6 @@
+
 import React, { useState } from 'react';
-import { useExaminers } from '@/hooks/useExaminers';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -22,12 +22,16 @@ import { examinerApi, type Examiner } from '@/services/api';
 const ExaminersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
-  const { examiners, loading, error, updateExaminer, deleteExaminer } = useExaminers();
 
-  const handleToggleStatus = async (examiner: any) => {
+  const { data: examiners = [], isLoading, error } = useQuery({
+    queryKey: ['examiners'],
+    queryFn: examinerApi.getAll,
+  });
+
+  const handleToggleStatus = async (examiner: Examiner) => {
     const newStatus = examiner.status === 'active' ? 'inactive' : 'active';
     try {
-      await updateExaminer(examiner.id, { status: newStatus });
+      await examinerApi.update(examiner.id, { status: newStatus });
       toast({
         title: 'Success',
         description: 'Examiner updated successfully',
@@ -44,7 +48,7 @@ const ExaminersPage = () => {
   const handleDeleteExaminer = async (examinerId: string) => {
     if (confirm('Are you sure you want to delete this examiner?')) {
       try {
-        await deleteExaminer(examinerId);
+        await examinerApi.delete(examinerId);
         toast({
           title: 'Success',
           description: 'Examiner deleted successfully',
@@ -59,12 +63,12 @@ const ExaminersPage = () => {
     }
   };
 
-  const filteredExaminers = examiners?.filter(examiner =>
+  const filteredExaminers = examiners.filter(examiner =>
     examiner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     examiner.email.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  );
 
-  if (loading) {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
