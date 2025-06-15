@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import store from './store/store';
 import { Toaster } from '@/components/ui/toaster';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import ProtectedRoute from './components/common/ProtectedRoute';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
@@ -37,17 +38,53 @@ function App() {
           <Router>
             <div className="App">
               <Routes>
+                {/* Public routes */}
                 <Route path="/" element={<Login />} />
                 <Route path="/register" element={<Signup />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/dashboard/examiners" element={<ExaminersPage />} />
-                <Route path="/dashboard/settings" element={<SettingsPage />} />
-                <Route path="/exam" element={<Exam />} />
-                <Route path="/practice" element={<Practice />} />
-                <Route path="/practice/problem" element={<PracticeProblem />} />
                 <Route path="/candidate-login" element={<CandidateLogin />} />
-                <Route path="/candidate-settings" element={<CandidateSettings />} />
                 <Route path="/unauthorized" element={<Unauthorized />} />
+                
+                {/* Admin/Examiner protected routes */}
+                <Route path="/dashboard" element={
+                  <ProtectedRoute allowedRoles={['admin', 'examiner']}>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Admin only routes */}
+                <Route path="/dashboard/examiners" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <ExaminersPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/dashboard/settings" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <SettingsPage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Authenticated user routes (all roles) */}
+                <Route path="/exam" element={
+                  <ProtectedRoute>
+                    <Exam />
+                  </ProtectedRoute>
+                } />
+                <Route path="/practice" element={
+                  <ProtectedRoute>
+                    <Practice />
+                  </ProtectedRoute>
+                } />
+                <Route path="/practice/problem" element={
+                  <ProtectedRoute>
+                    <PracticeProblem />
+                  </ProtectedRoute>
+                } />
+                <Route path="/candidate-settings" element={
+                  <ProtectedRoute>
+                    <CandidateSettings />
+                  </ProtectedRoute>
+                } />
+                
                 {/* Catch all route for 404 */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
