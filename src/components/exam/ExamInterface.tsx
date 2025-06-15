@@ -12,7 +12,6 @@ import TestRunner from './TestRunner';
 import ExamTimer from './ExamTimer';
 import TestResultsPanel from './TestResultsPanel';
 import { Toggle } from '@/components/ui/toggle';
-import { useTheme } from '@/contexts/ThemeContext';
 
 interface ExamInterfaceProps {
   question: Question;
@@ -34,7 +33,8 @@ interface TabSwitchData {
 }
 
 const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSubmit }) => {
-  const { theme, toggleTheme } = useTheme();
+  // Local theme state - only affects this component
+  const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
   
   // Safety checks for question prop
   const safeQuestion = question || {
@@ -61,6 +61,10 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
   });
   const [showTabWarning, setShowTabWarning] = useState(false);
   const [activeTab, setActiveTab] = useState('code');
+
+  const toggleLocalTheme = () => {
+    setLocalTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
 
   // Check if this is a React exam
   const isReactExam = React.useMemo(() => {
@@ -197,7 +201,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
   const renderReactPreview = () => {
     if (!isReactExam || !code?.trim()) {
       return (
-        <div className={`flex items-center justify-center h-full ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+        <div className={`flex items-center justify-center h-full ${localTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
           <div className="text-center">
             <Code className="w-12 h-12 mx-auto mb-4" />
             <p>Write your React component to see preview</p>
@@ -224,14 +228,14 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
           <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
           <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
           <style>
-            ${safeQuestion.boilerplate?.css || `body { margin: 20px; font-family: Arial, sans-serif; ${theme === 'dark' ? 'background: #1a1a1a; color: #e5e5e5;' : ''} }`}
+            ${safeQuestion.boilerplate?.css || `body { margin: 20px; font-family: Arial, sans-serif; ${localTheme === 'dark' ? 'background: #1a1a1a; color: #e5e5e5;' : ''} }`}
             
             .error-display {
-              background: ${theme === 'dark' ? '#2d1b1b' : '#ffebee'};
-              border: 1px solid ${theme === 'dark' ? '#dc2626' : '#f44336'};
+              background: ${localTheme === 'dark' ? '#2d1b1b' : '#ffebee'};
+              border: 1px solid ${localTheme === 'dark' ? '#dc2626' : '#f44336'};
               border-radius: 4px;
               padding: 16px;
-              color: ${theme === 'dark' ? '#fca5a5' : '#c62828'};
+              color: ${localTheme === 'dark' ? '#fca5a5' : '#c62828'};
               font-family: monospace;
             }
           </style>
@@ -272,14 +276,14 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
       return (
         <iframe
           srcDoc={previewHtml}
-          className={`w-full h-full border-0 rounded ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}
+          className={`w-full h-full border-0 rounded ${localTheme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}
           title="React Component Preview"
           sandbox="allow-scripts"
         />
       );
     } catch (error) {
       return (
-        <div className={`flex items-center justify-center h-full ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+        <div className={`flex items-center justify-center h-full ${localTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
           <div className="text-center">
             <AlertTriangle className="w-12 h-12 mx-auto mb-4" />
             <p>Preview Error</p>
@@ -292,31 +296,31 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
 
   if (!safeQuestion.id) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
+      <div className={`min-h-screen flex items-center justify-center ${localTheme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
         <div className="text-center">
-          <h1 className={`text-2xl font-bold mb-4 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Question Not Found</h1>
-          <p className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>The requested question could not be loaded.</p>
+          <h1 className={`text-2xl font-bold mb-4 ${localTheme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Question Not Found</h1>
+          <p className={localTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}>The requested question could not be loaded.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`h-full ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
+    <div className={`h-full ${localTheme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
       {/* Tab Switch Warning Overlay */}
       {showTabWarning && (
         <div className="fixed inset-0 bg-red-500/10 backdrop-blur-sm flex items-center justify-center z-50">
-          <Card className={`border-red-200 shadow-xl max-w-md mx-4 ${theme === 'dark' ? 'bg-gray-800 border-red-800' : 'bg-white'}`}>
+          <Card className={`border-red-200 shadow-xl max-w-md mx-4 ${localTheme === 'dark' ? 'bg-gray-800 border-red-800' : 'bg-white'}`}>
             <CardContent className="p-6 text-center">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${theme === 'dark' ? 'bg-red-900' : 'bg-red-50'}`}>
-                <AlertTriangle className={`w-6 h-6 ${theme === 'dark' ? 'text-red-400' : 'text-red-500'}`} />
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${localTheme === 'dark' ? 'bg-red-900' : 'bg-red-50'}`}>
+                <AlertTriangle className={`w-6 h-6 ${localTheme === 'dark' ? 'text-red-400' : 'text-red-500'}`} />
               </div>
-              <h2 className={`text-lg font-semibold mb-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Tab Switch Detected!</h2>
-              <p className={`mb-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+              <h2 className={`text-lg font-semibold mb-2 ${localTheme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Tab Switch Detected!</h2>
+              <p className={`mb-4 ${localTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                 You have switched tabs {tabSwitchData.totalSwitches} times. 
                 This behavior is being tracked and will affect your evaluation.
               </p>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+              <p className={`text-sm ${localTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                 Please focus on this window to avoid further warnings.
               </p>
             </CardContent>
@@ -325,7 +329,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
       )}
 
       {/* Action Bar */}
-      <div className={`border-b px-4 sm:px-6 lg:px-8 py-4 ${theme === 'dark' ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-100'}`}>
+      <div className={`border-b px-4 sm:px-6 lg:px-8 py-4 ${localTheme === 'dark' ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-100'}`}>
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-4 flex-shrink-0">
             <div className="flex items-center gap-3">
@@ -342,13 +346,13 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
           
           <div className="flex items-center gap-3 flex-shrink-0">
             <Toggle
-              pressed={theme === 'dark'}
-              onPressedChange={toggleTheme}
+              pressed={localTheme === 'dark'}
+              onPressedChange={toggleLocalTheme}
               aria-label="Toggle theme"
               size="sm"
-              className={`gap-1 ${theme === 'dark' ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'}`}
+              className={`gap-1 ${localTheme === 'dark' ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'}`}
             >
-              {theme === 'dark' ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
+              {localTheme === 'dark' ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
             </Toggle>
             
             <ExamTimer 
@@ -383,17 +387,17 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
       {/* Main Content */}
       <div className="flex h-[calc(100%-5rem)]">
         {/* Left Panel - Problem Description and Results */}
-        <div className={`w-1/3 border-r overflow-y-auto ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-gray-50/30 border-gray-100'}`}>
+        <div className={`w-1/3 border-r overflow-y-auto ${localTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-gray-50/30 border-gray-100'}`}>
           <div className="p-6 space-y-6">
-            <Card className={`shadow-sm ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+            <Card className={`shadow-sm ${localTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
               <CardHeader className="pb-4">
-                <CardTitle className={`text-lg flex items-center gap-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                <CardTitle className={`text-lg flex items-center gap-2 ${localTheme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                   Problem Description
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className={`prose prose-sm max-w-none leading-relaxed ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                <div className={`prose prose-sm max-w-none leading-relaxed ${localTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                   {safeQuestion.description?.split('\n').map((line, i) => (
                     <p key={i} className="mb-2">{line}</p>
                   )) || 'No description available'}
@@ -402,30 +406,30 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
             </Card>
 
             {testResults.length > 0 && (
-              <Card className={`shadow-sm ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+              <Card className={`shadow-sm ${localTheme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
                 <CardHeader className="pb-4">
-                  <CardTitle className={`text-lg flex items-center gap-2 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                  <CardTitle className={`text-lg flex items-center gap-2 ${localTheme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     Test Results
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-3">
                   {testResults.map((result, index) => (
-                    <div key={index} className={`flex items-start gap-3 p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                    <div key={index} className={`flex items-start gap-3 p-3 rounded-lg ${localTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
                       {result.passed ? (
                         <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
                       ) : (
                         <XCircle className="w-5 h-5 text-red-500 mt-0.5" />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium mb-1 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                        <p className={`text-sm font-medium mb-1 ${localTheme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                           Test {index + 1}
                         </p>
-                        <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <p className={`text-xs ${localTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
                           {result.testCase.description}
                         </p>
                         {result.error && (
-                          <p className={`text-xs mt-1 font-mono ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>
+                          <p className={`text-xs mt-1 font-mono ${localTheme === 'dark' ? 'text-red-400' : 'text-red-600'}`}>
                             {result.error}
                           </p>
                         )}
@@ -439,16 +443,16 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
         </div>
 
         {/* Right Panel - Code Editor and Preview */}
-        <div className={`flex-1 flex flex-col ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
+        <div className={`flex-1 flex flex-col ${localTheme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
           {isReactExam ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-              <div className={`border-b px-6 py-2 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-100'}`}>
-                <TabsList className={theme === 'dark' ? 'bg-gray-800 p-1' : 'bg-gray-50 p-1'}>
-                  <TabsTrigger value="code" className={`gap-2 ${theme === 'dark' ? 'data-[state=active]:bg-gray-700' : 'data-[state=active]:bg-white'}`}>
+              <div className={`border-b px-6 py-2 ${localTheme === 'dark' ? 'border-gray-700' : 'border-gray-100'}`}>
+                <TabsList className={localTheme === 'dark' ? 'bg-gray-800 p-1' : 'bg-gray-50 p-1'}>
+                  <TabsTrigger value="code" className={`gap-2 ${localTheme === 'dark' ? 'data-[state=active]:bg-gray-700' : 'data-[state=active]:bg-white'}`}>
                     <Code className="w-4 h-4" />
                     Code
                   </TabsTrigger>
-                  <TabsTrigger value="preview" className={`gap-2 ${theme === 'dark' ? 'data-[state=active]:bg-gray-700' : 'data-[state=active]:bg-white'}`}>
+                  <TabsTrigger value="preview" className={`gap-2 ${localTheme === 'dark' ? 'data-[state=active]:bg-gray-700' : 'data-[state=active]:bg-white'}`}>
                     <Eye className="w-4 h-4" />
                     Preview
                   </TabsTrigger>
@@ -459,7 +463,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
                 <MonacoEditor
                   height="100%"
                   language="javascript"
-                  theme={theme === 'dark' ? 'vs-dark' : 'light'}
+                  theme={localTheme === 'dark' ? 'vs-dark' : 'light'}
                   value={code}
                   onChange={(value) => setCode(value || '')}
                   options={{
@@ -489,7 +493,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
               <MonacoEditor
                 height="100%"
                 language="javascript"
-                theme={theme === 'dark' ? 'vs-dark' : 'light'}
+                theme={localTheme === 'dark' ? 'vs-dark' : 'light'}
                 value={code}
                 onChange={(value) => setCode(value || '')}
                 options={{
