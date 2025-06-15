@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Camera, Monitor, Lock, AlertTriangle, Eye, X, Move } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,6 +33,13 @@ interface RecordingData {
   violations: ProctoringViolation[];
 }
 
+interface RetryState {
+  webcamRetries: number;
+  screenRetries: number;
+  maxRetries: number;
+  retryDelay: number;
+}
+
 const ProctoringManager: React.FC<ProctoringManagerProps> = ({ 
   isEnabled, 
   onViolation, 
@@ -45,7 +53,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
   });
 
   const [isMinimized, setIsMinimized] = useState(false);
-  const [position, setPosition] = useState({ x: 16, y: window.innerHeight - 200 });
+  const [position, setPosition] = useState({ x: window.innerWidth - 336, y: window.innerHeight - 216 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [showLockdownPrompt, setShowLockdownPrompt] = useState(false);
@@ -60,7 +68,73 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     violations: []
   });
   const screenStream = useRef<MediaStream | null>(null);
+  const webcamStream = useRef<MediaStream | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  
+  // Retry management
+  const retryState = useRef<RetryState>({
+    webcamRetries: 0,
+    screenRetries: 0,
+    maxRetries: 5,
+    retryDelay: 3000
+  });
+  
+  // Cleanup and initialization flags
+  const isInitializingWebcam = useRef(false);
+  const isInitializingScreen = useRef(false);
+  const timeoutIds = useRef<Set<NodeJS.Timeout>>(new Set());
+  const cleanupFunctions = useRef<Set<() => void>>(new Set());
+
+  // Utility to manage timeouts
+  const createTimeout = useCallback((callback: () => void, delay: number) => {
+    const timeoutId = setTimeout(() => {
+      timeoutIds.current.delete(timeoutId);
+      callback();
+    }, delay);
+    timeoutIds.current.add(timeoutId);
+    return timeoutId;
+  }, []);
+
+  // Utility to cleanup all resources
+  const cleanupAllResources = useCallback(() => {
+    console.log('Cleaning up all proctoring resources...');
+    
+    // Clear all timeouts
+    timeoutIds.current.forEach(id => clearTimeout(id));
+    timeoutIds.current.clear();
+    
+    // Run all cleanup functions
+    cleanupFunctions.current.forEach(cleanup => {
+      try {
+        cleanup();
+      } catch (error) {
+        console.error('Error during cleanup:', error);
+      }
+    });
+    cleanupFunctions.current.clear();
+    
+    // Stop media recorders
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    if (screenRecorderRef.current?.state === 'recording') {
+      screenRecorderRef.current.stop();
+    }
+    
+    // Stop media streams
+    if (webcamStream.current) {
+      webcamStream.current.getTracks().forEach(track => track.stop());
+      webcamStream.current = null;
+    }
+    if (screenStream.current) {
+      screenStream.current.getTracks().forEach(track => track.stop());
+      screenStream.current = null;
+    }
+    
+    // Reset flags
+    isInitializingWebcam.current = false;
+    isInitializingScreen.current = false;
+  }, []);
 
   // Store violation data
   const handleViolationInternal = useCallback((violation: ProctoringViolation) => {
@@ -68,10 +142,29 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     onViolation(violation);
   }, [onViolation]);
 
-  // Initialize webcam monitoring
+  // Initialize webcam monitoring with retry logic
   const initializeWebcam = useCallback(async () => {
+    if (isInitializingWebcam.current || webcamStream.current) {
+      console.log('Webcam initialization already in progress or active');
+      return;
+    }
+
+    if (retryState.current.webcamRetries >= retryState.current.maxRetries) {
+      console.log('Max webcam retry attempts reached');
+      setStatus(prev => ({ ...prev, webcam: 'error' }));
+      handleViolationInternal({
+        type: 'face_not_detected',
+        timestamp: new Date(),
+        severity: 'high',
+        description: 'Webcam access permanently denied after multiple attempts'
+      });
+      return;
+    }
+
+    isInitializingWebcam.current = true;
+    
     try {
-      console.log('Initializing webcam...');
+      console.log(`Initializing webcam... (attempt ${retryState.current.webcamRetries + 1})`);
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           width: { ideal: 640 },
@@ -81,39 +174,75 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
         audio: true 
       });
       
+      webcamStream.current = stream;
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setStatus(prev => ({ ...prev, webcam: 'active' }));
         console.log('Webcam initialized successfully');
+        retryState.current.webcamRetries = 0; // Reset on success
         
         startWebcamRecording(stream);
       }
     } catch (error) {
       console.error('Failed to access webcam:', error);
+      retryState.current.webcamRetries++;
       setStatus(prev => ({ ...prev, webcam: 'error' }));
+      
+      const isPermissionDenied = error instanceof Error && error.name === 'NotAllowedError';
+      
       toast({
         title: "Webcam Access Required",
-        description: "Please allow webcam access and refresh the page to continue with the exam.",
+        description: isPermissionDenied 
+          ? `Webcam access denied. Retrying in 3 seconds... (${retryState.current.webcamRetries}/${retryState.current.maxRetries})`
+          : "Please allow webcam access and refresh the page to continue with the exam.",
         variant: "destructive"
       });
+      
       handleViolationInternal({
         type: 'face_not_detected',
         timestamp: new Date(),
         severity: 'high',
-        description: 'Failed to access webcam for monitoring'
+        description: `Failed to access webcam: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
-    }
-  }, [handleViolationInternal]);
 
-  // Initialize screen recording with better error handling
+      // Retry after delay if not max attempts reached
+      if (retryState.current.webcamRetries < retryState.current.maxRetries) {
+        createTimeout(() => {
+          if (!webcamStream.current) {
+            console.log('Retrying webcam initialization...');
+            initializeWebcam();
+          }
+        }, retryState.current.retryDelay);
+      }
+    } finally {
+      isInitializingWebcam.current = false;
+    }
+  }, [handleViolationInternal, createTimeout]);
+
+  // Initialize screen recording with enhanced error handling
   const initializeScreenRecording = useCallback(async () => {
-    if (screenStream.current) {
-      console.log('Screen recording already active, skipping...');
+    if (isInitializingScreen.current || screenStream.current) {
+      console.log('Screen recording initialization already in progress or active');
       return;
     }
 
+    if (retryState.current.screenRetries >= retryState.current.maxRetries) {
+      console.log('Max screen recording retry attempts reached');
+      setStatus(prev => ({ ...prev, screenRecording: 'error' }));
+      handleViolationInternal({
+        type: 'screen_share_stopped',
+        timestamp: new Date(),
+        severity: 'high',
+        description: 'Screen recording permanently denied after multiple attempts'
+      });
+      return;
+    }
+
+    isInitializingScreen.current = true;
+
     try {
-      console.log('Requesting screen share...');
+      console.log(`Requesting screen share... (attempt ${retryState.current.screenRetries + 1})`);
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           displaySurface: "browser"
@@ -123,6 +252,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       
       screenStream.current = stream;
       console.log('Screen recording initialized successfully');
+      retryState.current.screenRetries = 0; // Reset on success
       
       const recorder = new MediaRecorder(stream, {
         mimeType: 'video/webm;codecs=vp9'
@@ -145,7 +275,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       // Enhanced detection for screen sharing end
       const videoTrack = stream.getVideoTracks()[0];
       
-      videoTrack.addEventListener('ended', () => {
+      const handleTrackEnded = () => {
         console.log('Screen sharing ended - candidate stopped sharing');
         screenStream.current = null;
         setStatus(prev => ({ ...prev, screenRecording: 'error' }));
@@ -164,21 +294,31 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
         });
         
         // Attempt to restart screen recording after a delay
-        setTimeout(() => {
+        createTimeout(() => {
           if (!screenStream.current) {
             initializeScreenRecording();
           }
-        }, 3000);
+        }, retryState.current.retryDelay);
+      };
+      
+      videoTrack.addEventListener('ended', handleTrackEnded);
+      
+      // Store cleanup function
+      cleanupFunctions.current.add(() => {
+        videoTrack.removeEventListener('ended', handleTrackEnded);
       });
       
     } catch (error) {
       console.error('Failed to start screen recording:', error);
+      retryState.current.screenRetries++;
       setStatus(prev => ({ ...prev, screenRecording: 'error' }));
       
-      if (error instanceof Error && error.name === 'NotAllowedError') {
+      const isPermissionDenied = error instanceof Error && error.name === 'NotAllowedError';
+      
+      if (isPermissionDenied) {
         toast({
           title: "Screen Recording Required",
-          description: "Screen recording is mandatory for this exam. Please allow screen sharing when prompted again in 3 seconds.",
+          description: `Screen recording is mandatory for this exam. Retrying in 3 seconds... (${retryState.current.screenRetries}/${retryState.current.maxRetries})`,
           variant: "destructive"
         });
       }
@@ -187,21 +327,25 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
         type: 'screen_share_stopped',
         timestamp: new Date(),
         severity: 'high',
-        description: 'Screen recording permission denied or failed to start'
+        description: `Screen recording failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
 
-      // Retry after 3 seconds when initially denied
-      setTimeout(() => {
-        if (!screenStream.current) {
-          console.log('Retrying screen recording after denial...');
-          initializeScreenRecording();
-        }
-      }, 3000);
+      // Retry after delay if not max attempts reached
+      if (retryState.current.screenRetries < retryState.current.maxRetries) {
+        createTimeout(() => {
+          if (!screenStream.current) {
+            console.log('Retrying screen recording after denial...');
+            initializeScreenRecording();
+          }
+        }, retryState.current.retryDelay);
+      }
+    } finally {
+      isInitializingScreen.current = false;
     }
-  }, [handleViolationInternal]);
+  }, [handleViolationInternal, createTimeout]);
 
-  // Start webcam recording
-  const startWebcamRecording = (stream: MediaStream) => {
+  // Start webcam recording with error handling
+  const startWebcamRecording = useCallback((stream: MediaStream) => {
     try {
       const recorder = new MediaRecorder(stream, {
         mimeType: 'video/webm;codecs=vp9'
@@ -213,6 +357,10 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
         }
       };
       
+      recorder.onerror = (event) => {
+        console.error('Webcam recording error:', event);
+      };
+      
       recorder.start(30000);
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
@@ -220,7 +368,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     } catch (error) {
       console.error('Failed to start webcam recording:', error);
     }
-  };
+  }, []);
 
   // Enhanced browser lockdown with user-initiated fullscreen
   const initializeBrowserLock = useCallback(() => {
@@ -311,15 +459,19 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
     // Try initial fullscreen request
-    setTimeout(enterFullscreen, 1000);
+    createTimeout(enterFullscreen, 1000);
 
-    return () => {
+    // Store cleanup function
+    const cleanup = () => {
       document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [handleViolationInternal]);
+    
+    cleanupFunctions.current.add(cleanup);
+    return cleanup;
+  }, [handleViolationInternal, createTimeout]);
 
   // Manual fullscreen activation
   const handleEnableLockdown = async () => {
@@ -353,7 +505,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     };
   }, [getRecordingData]);
 
-  // Drag functionality
+  // Drag functionality with bounds checking
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.drag-handle')) {
       setIsDragging(true);
@@ -394,6 +546,10 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     };
 
     window.addEventListener('resize', handleResize);
+    cleanupFunctions.current.add(() => {
+      window.removeEventListener('resize', handleResize);
+    });
+    
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -401,38 +557,17 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
   useEffect(() => {
     if (!isEnabled) return;
 
-    let cleanupBrowserLock: (() => void) | undefined;
-
     const initialize = async () => {
       console.log('Initializing proctoring features...');
       await initializeWebcam();
       await initializeScreenRecording();
-      cleanupBrowserLock = initializeBrowserLock();
+      initializeBrowserLock();
     };
 
     initialize();
 
-    return () => {
-      console.log('Cleaning up proctoring features...');
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop();
-      }
-      if (screenRecorderRef.current) {
-        screenRecorderRef.current.stop();
-      }
-      if (screenStream.current) {
-        screenStream.current.getTracks().forEach(track => track.stop());
-        screenStream.current = null;
-      }
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
-      if (cleanupBrowserLock) {
-        cleanupBrowserLock();
-      }
-    };
-  }, [isEnabled, initializeWebcam, initializeScreenRecording, initializeBrowserLock]);
+    return cleanupAllResources;
+  }, [isEnabled, initializeWebcam, initializeScreenRecording, initializeBrowserLock, cleanupAllResources]);
 
   if (!isEnabled) return null;
 
@@ -533,11 +668,17 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
                   <div className="flex items-center gap-2">
                     {getStatusIcon('webcam', status.webcam)}
                     <span>Webcam</span>
+                    {retryState.current.webcamRetries > 0 && (
+                      <span className="text-yellow-400">({retryState.current.webcamRetries}/5)</span>
+                    )}
                   </div>
                   
                   <div className="flex items-center gap-2">
                     {getStatusIcon('screen', status.screenRecording)}
                     <span>Screen</span>
+                    {retryState.current.screenRetries > 0 && (
+                      <span className="text-yellow-400">({retryState.current.screenRetries}/5)</span>
+                    )}
                   </div>
                 </div>
                 
@@ -547,6 +688,9 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
                       {status.browserLock === 'error' && 'Fullscreen required. '}
                       {status.webcam === 'error' && 'Webcam access needed. '}
                       {status.screenRecording === 'error' && 'Screen recording stopped. '}
+                      {(retryState.current.webcamRetries >= retryState.current.maxRetries || 
+                        retryState.current.screenRetries >= retryState.current.maxRetries) && 
+                        'Max retry attempts reached. '}
                       Please resolve to continue exam.
                     </p>
                   </div>
