@@ -214,7 +214,17 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
     setHasSubmitted(true);
     
     try {
-      onSubmit(code, testResults, tabSwitchData);
+      // Get proctoring data if available
+      const getProctoringData = (window as any).getProctoringData;
+      const proctoringData = getProctoringData ? getProctoringData() : null;
+      
+      // Include proctoring data in submission
+      const submissionData = {
+        ...tabSwitchData,
+        proctoringData
+      };
+      
+      onSubmit(code, testResults, submissionData);
       
       toast({
         title: "Solution Submitted",

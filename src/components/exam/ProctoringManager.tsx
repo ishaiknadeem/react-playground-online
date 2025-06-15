@@ -27,6 +27,12 @@ interface ProctoringStatus {
   faceDetection: 'detected' | 'not_detected' | 'multiple' | 'error';
 }
 
+interface RecordingData {
+  webcamBlobs: Blob[];
+  screenBlobs: Blob[];
+  violations: ProctoringViolation[];
+}
+
 const ProctoringManager: React.FC<ProctoringManagerProps> = ({ 
   isEnabled, 
   onViolation, 
@@ -49,9 +55,20 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const screenRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunks = useRef<Blob[]>([]);
+  const recordingData = useRef<RecordingData>({
+    webcamBlobs: [],
+    screenBlobs: [],
+    violations: []
+  });
   const faceDetectionInterval = useRef<NodeJS.Timeout | null>(null);
+  const screenStream = useRef<MediaStream | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+
+  // Store violation data
+  const handleViolationInternal = useCallback((violation: ProctoringViolation) => {
+    recordingData.current.violations.push(violation);
+    onViolation(violation);
+  }, [onViolation]);
 
   // Initialize webcam monitoring
   const initializeWebcam = useCallback(async () => {
@@ -69,7 +86,6 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
         videoRef.current.srcObject = stream;
         setStatus(prev => ({ ...prev, webcam: 'active' }));
         
-        // Start face detection after video loads
         videoRef.current.onloadedmetadata = () => {
           startFaceDetection();
         };
@@ -79,44 +95,53 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     } catch (error) {
       console.error('Failed to access webcam:', error);
       setStatus(prev => ({ ...prev, webcam: 'error' }));
-      onViolation({
+      handleViolationInternal({
         type: 'face_not_detected',
         timestamp: new Date(),
         severity: 'high',
         description: 'Failed to access webcam for monitoring'
       });
     }
-  }, [onViolation]);
+  }, [handleViolationInternal]);
 
-  // Initialize screen recording
+  // Initialize screen recording (fixed double permission issue)
   const initializeScreenRecording = useCallback(async () => {
+    if (screenStream.current) {
+      console.log('Screen recording already active, skipping...');
+      return;
+    }
+
     try {
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({
+      const stream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: true
       });
       
-      const recorder = new MediaRecorder(screenStream, {
+      screenStream.current = stream;
+      
+      const recorder = new MediaRecorder(stream, {
         mimeType: 'video/webm;codecs=vp9'
       });
       
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          recordedChunks.current.push(event.data);
+          recordingData.current.screenBlobs.push(event.data);
         }
       };
       
       recorder.onstop = () => {
-        console.log('Screen recording stopped, chunks:', recordedChunks.current.length);
+        console.log('Screen recording stopped');
       };
       
-      recorder.start(10000);
+      recorder.start(30000); // Record in 30-second chunks
       screenRecorderRef.current = recorder;
       setStatus(prev => ({ ...prev, screenRecording: 'active' }));
       
-      screenStream.getVideoTracks()[0].addEventListener('ended', () => {
+      // Handle when user stops screen sharing
+      stream.getVideoTracks()[0].addEventListener('ended', () => {
+        screenStream.current = null;
         setStatus(prev => ({ ...prev, screenRecording: 'error' }));
-        onViolation({
+        handleViolationInternal({
           type: 'screen_share_stopped',
           timestamp: new Date(),
           severity: 'high',
@@ -127,16 +152,16 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     } catch (error) {
       console.error('Failed to start screen recording:', error);
       setStatus(prev => ({ ...prev, screenRecording: 'error' }));
-      onViolation({
+      handleViolationInternal({
         type: 'screen_share_stopped',
         timestamp: new Date(),
         severity: 'medium',
         description: 'Failed to start screen recording'
       });
     }
-  }, [onViolation]);
+  }, [handleViolationInternal]);
 
-  // Start webcam recording
+  // Start webcam recording (optimized)
   const startWebcamRecording = (stream: MediaStream) => {
     try {
       const recorder = new MediaRecorder(stream, {
@@ -145,11 +170,11 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          console.log('Webcam chunk recorded:', event.data.size);
+          recordingData.current.webcamBlobs.push(event.data);
         }
       };
       
-      recorder.start(5000);
+      recorder.start(30000); // Record in 30-second chunks
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
     } catch (error) {
@@ -157,7 +182,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     }
   };
 
-  // Improved face detection using motion and brightness
+  // Enhanced face detection
   const startFaceDetection = () => {
     faceDetectionInterval.current = setInterval(() => {
       if (videoRef.current && canvasRef.current) {
@@ -170,22 +195,21 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
           canvas.height = video.videoHeight;
           ctx.drawImage(video, 0, 0);
           
-          // Improved face detection using multiple metrics
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const data = imageData.data;
           
           let brightness = 0;
           let pixelCount = 0;
-          let colorVariance = 0;
+          let skinTonePixels = 0;
           
-          // Sample center area (likely where face would be)
-          const startX = Math.floor(canvas.width * 0.25);
-          const endX = Math.floor(canvas.width * 0.75);
+          // Focus on center area where face would likely be
+          const startX = Math.floor(canvas.width * 0.3);
+          const endX = Math.floor(canvas.width * 0.7);
           const startY = Math.floor(canvas.height * 0.2);
           const endY = Math.floor(canvas.height * 0.8);
           
-          for (let y = startY; y < endY; y += 4) {
-            for (let x = startX; x < endX; x += 4) {
+          for (let y = startY; y < endY; y += 3) {
+            for (let x = startX; x < endX; x += 3) {
               const i = (y * canvas.width + x) * 4;
               const r = data[i];
               const g = data[i + 1];
@@ -194,22 +218,25 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
               const pixelBrightness = (r + g + b) / 3;
               brightness += pixelBrightness;
               
-              // Calculate color variance (skin tone detection)
-              const variance = Math.abs(r - g) + Math.abs(g - b) + Math.abs(r - b);
-              colorVariance += variance;
+              // Improved skin tone detection
+              if (r > 95 && g > 40 && b > 20 && 
+                  r > g && r > b && 
+                  Math.abs(r - g) > 15) {
+                skinTonePixels++;
+              }
               
               pixelCount++;
             }
           }
           
           const avgBrightness = brightness / pixelCount;
-          const avgColorVariance = colorVariance / pixelCount;
+          const skinRatio = skinTonePixels / pixelCount;
           
-          // More sophisticated detection logic
-          const hasFace = avgBrightness > 30 && 
-                         avgBrightness < 200 && 
-                         avgColorVariance > 15 && 
-                         avgColorVariance < 80;
+          // More reliable face detection
+          const hasFace = avgBrightness > 40 && 
+                         avgBrightness < 220 && 
+                         skinRatio > 0.02 &&
+                         pixelCount > 100;
           
           if (hasFace) {
             setStatus(prev => ({ ...prev, faceDetection: 'detected' }));
@@ -217,24 +244,22 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
           } else {
             setNoFaceCount(prev => prev + 1);
             
-            // Only trigger violation after multiple consecutive failures
-            if (noFaceCount >= 3) {
+            if (noFaceCount >= 2) {
               setStatus(prev => ({ ...prev, faceDetection: 'not_detected' }));
               
-              // Only send violation every 10 seconds to avoid spam
-              if (noFaceCount % 5 === 0) {
-                onViolation({
+              if (noFaceCount % 4 === 0) {
+                handleViolationInternal({
                   type: 'face_not_detected',
                   timestamp: new Date(),
                   severity: 'medium',
-                  description: 'Face not detected in webcam feed for extended period'
+                  description: 'Face not detected in webcam feed'
                 });
               }
             }
           }
         }
       }
-    }, 3000); // Check every 3 seconds instead of 2
+    }, 2000);
   };
 
   // Browser lockdown
@@ -251,7 +276,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
         (e.ctrlKey && e.key === 'u')
       ) {
         e.preventDefault();
-        onViolation({
+        handleViolationInternal({
           type: 'unauthorized_app',
           timestamp: new Date(),
           severity: 'medium',
@@ -273,7 +298,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
         setStatus(prev => ({ ...prev, browserLock: 'error' }));
-        onViolation({
+        handleViolationInternal({
           type: 'unauthorized_app',
           timestamp: new Date(),
           severity: 'high',
@@ -295,7 +320,26 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, [onViolation]);
+  }, [handleViolationInternal]);
+
+  // Export recording data for API submission
+  const getRecordingData = useCallback(() => {
+    return {
+      webcamBlobs: recordingData.current.webcamBlobs,
+      screenBlobs: recordingData.current.screenBlobs,
+      violations: recordingData.current.violations
+    };
+  }, []);
+
+  // Expose recording data to parent component
+  useEffect(() => {
+    // Store the function in window for access from ExamInterface
+    (window as any).getProctoringData = getRecordingData;
+    
+    return () => {
+      delete (window as any).getProctoringData;
+    };
+  }, [getRecordingData]);
 
   // Drag functionality
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -349,6 +393,10 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       }
       if (screenRecorderRef.current) {
         screenRecorderRef.current.stop();
+      }
+      if (screenStream.current) {
+        screenStream.current.getTracks().forEach(track => track.stop());
+        screenStream.current = null;
       }
       if (faceDetectionInterval.current) {
         clearInterval(faceDetectionInterval.current);
@@ -404,6 +452,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
         transform: position.x || position.y ? 'none' : undefined
       }}
       onMouseDown={handleMouseDown}
+      data-proctoring-panel
     >
       <Card className="bg-gray-900/95 border-gray-700 text-white backdrop-blur-sm cursor-move">
         <CardContent className="p-4">
@@ -426,7 +475,6 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  // Just hide the UI, don't stop monitoring
                   const panel = document.querySelector('[data-proctoring-panel]') as HTMLElement;
                   if (panel) panel.style.display = 'none';
                 }}

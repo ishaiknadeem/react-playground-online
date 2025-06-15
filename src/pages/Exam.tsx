@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import ExamStart from '@/components/exam/ExamStart';
@@ -240,25 +239,45 @@ console.log('Test 2:', twoSum([3,2,4], 6)); // Expected: [1,2]`,
     console.log('Exam started at:', new Date().toISOString());
   };
 
-  const handleSubmitExam = (code: any, testResults: any, tabSwitchData: any) => {
+  const handleSubmitExam = async (code: any, testResults: any, tabSwitchData: any) => {
     setExamState('submitted');
     const endTime = new Date();
     const timeTaken = startTime ? (endTime.getTime() - startTime.getTime()) / 1000 / 60 : 0;
     
-    setSubmissionData({
+    const submissionData = {
       code,
       testResults,
       tabSwitchData,
       timeTaken: Math.round(timeTaken * 100) / 100,
       submittedAt: endTime.toISOString()
-    });
+    };
     
-    console.log('Exam submitted with tab tracking:', {
+    setSubmissionData(submissionData);
+    
+    // Submit proctoring data if available
+    if (tabSwitchData.proctoringData) {
+      try {
+        const { proctoringApi } = await import('@/services/proctoringApi');
+        await proctoringApi.submitProctoringData({
+          examId: questionId!,
+          webcamBlobs: tabSwitchData.proctoringData.webcamBlobs || [],
+          screenBlobs: tabSwitchData.proctoringData.screenBlobs || [],
+          violations: tabSwitchData.proctoringData.violations || [],
+          submittedAt: endTime.toISOString()
+        });
+        console.log('Proctoring data submitted successfully');
+      } catch (error) {
+        console.error('Failed to submit proctoring data:', error);
+      }
+    }
+    
+    console.log('Exam submitted with proctoring data:', {
       questionId,
       code,
       testResults,
       tabSwitchData,
-      timeTaken
+      timeTaken,
+      proctoringDataIncluded: !!tabSwitchData.proctoringData
     });
   };
 
