@@ -15,6 +15,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Exam from './pages/Exam';
 import ExaminersPage from './pages/dashboard/ExaminersPage';
+import AllExamsPage from './pages/dashboard/AllExamsPage';
 import SettingsPage from './pages/dashboard/SettingsPage';
 import Practice from './pages/Practice';
 import PracticeProblem from './pages/PracticeProblem';
@@ -78,6 +79,11 @@ const AppContent = () => {
           <Route path="/dashboard/examiners" element={
             <ProtectedRoute allowedRoles={['admin']}>
               <ExaminersPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard/exams" element={
+            <ProtectedRoute allowedRoles={['admin', 'examiner']}>
+              <AllExamsPage />
             </ProtectedRoute>
           } />
           <Route path="/dashboard/settings" element={
