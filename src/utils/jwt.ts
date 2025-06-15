@@ -1,59 +1,145 @@
 
-export interface JWTPayload {
-  sub: string;
+interface JWTPayload {
+  id: string;
   email: string;
-  name: string;
-  role: 'admin' | 'examiner' | 'candidate';
-  organizationId?: string;
-  exp: number;
+  role: string;
+  name?: string;
+  exp?: number;
+  iat?: number;
+  iss?: string;
+  aud?: string;
 }
 
-export const validateToken = (token: string): JWTPayload | null => {
-  if (!token) {
-    console.log('JWT Validation: No token provided');
+export const isValidJWT = (token: string): boolean => {
+  if (!token || typeof token !== 'string') {
+    return false;
+  }
+
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return false;
+    }
+
+    // Validate each part can be base64 decoded
+    parts.forEach(part => {
+      if (!part) throw new Error('Invalid token part');
+      atob(part.replace(/-/g, '+').replace(/_/g, '/'));
+    });
+
+    return true;
+  } catch (error) {
+    console.warn('Invalid JWT format:', error);
+    return false;
+  }
+};
+
+export const decodeJWT = (token: string): JWTPayload | null => {
+  if (!isValidJWT(token)) {
     return null;
   }
 
   try {
-    // Handle both real JWT (3 parts) and mock tokens (base64 encoded JSON)
-    const parts = token.split('.');
-    
-    if (parts.length === 3) {
-      // Real JWT format
-      console.log('JWT Validation: Processing real JWT token');
-      const payload = JSON.parse(atob(parts[1]));
-      
-      // Check expiration
-      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-        console.log('JWT Validation: Token expired');
-        return null;
-      }
-      
-      return payload;
-    } else if (parts.length === 1) {
-      // Mock token format (base64 encoded JSON)
-      console.log('JWT Validation: Processing mock token');
-      const payload = JSON.parse(atob(token));
-      
-      // Check expiration
-      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-        console.log('JWT Validation: Mock token expired');
-        return null;
-      }
-      
-      console.log('JWT Validation: Mock token valid:', payload);
-      return payload;
-    } else {
-      console.log('JWT Validation: Invalid token structure');
+    const payload = token.split('.')[1];
+    const decodedPayload = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    const parsed = JSON.parse(decodedPayload) as JWTPayload;
+
+    // Validate required fields
+    if (!parsed.id || !parsed.email || !parsed.role) {
+      console.warn('JWT missing required fields');
       return null;
     }
+
+    // Validate role
+    if (!['admin', 'examiner', 'candidate'].includes(parsed.role)) {
+      console.warn('Invalid role in JWT:', parsed.role);
+      return null;
+    }
+
+    return parsed;
   } catch (error) {
-    console.error('JWT Validation: Error parsing token:', error);
+    console.error('Error decoding JWT:', error);
     return null;
   }
 };
 
 export const isTokenExpired = (token: string): boolean => {
-  const payload = validateToken(token);
-  return !payload;
+  const payload = decodeJWT(token);
+  if (!payload || !payload.exp) {
+    return true;
+  }
+
+  // Add 30 second buffer to account for clock skew
+  const currentTime = Math.floor(Date.now() / 1000) + 30;
+  return payload.exp < currentTime;
+};
+
+export const getTokenExpirationTime = (token: string): Date | null => {
+  const payload = decodeJWT(token);
+  if (!payload || !payload.exp) {
+    return null;
+  }
+
+  return new Date(payload.exp * 1000);
+};
+
+export const validateTokenStructure = (token: string): {
+  isValid: boolean;
+  errors: string[];
+} => {
+  const errors: string[] = [];
+
+  if (!token) {
+    errors.push('Token is required');
+    return { isValid: false, errors };
+  }
+
+  if (typeof token !== 'string') {
+    errors.push('Token must be a string');
+    return { isValid: false, errors };
+  }
+
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    errors.push('Token must have 3 parts separated by dots');
+    return { isValid: false, errors };
+  }
+
+  try {
+    // Validate header
+    const header = JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')));
+    if (!header.alg || !header.typ) {
+      errors.push('Invalid token header');
+    }
+
+    // Validate payload
+    const payload = decodeJWT(token);
+    if (!payload) {
+      errors.push('Invalid token payload');
+    } else {
+      if (isTokenExpired(token)) {
+        errors.push('Token is expired');
+      }
+    }
+  } catch (error) {
+    errors.push('Token structure is malformed');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
+// Utility to safely extract user info from token
+export const extractUserFromToken = (token: string) => {
+  const payload = decodeJWT(token);
+  if (!payload) return null;
+
+  return {
+    id: payload.id,
+    email: payload.email,
+    role: payload.role,
+    name: payload.name || '',
+  };
 };

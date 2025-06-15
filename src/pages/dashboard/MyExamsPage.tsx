@@ -2,18 +2,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { getMyExams, createExam } from '@/store/actions/examActions';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Search, Eye, Users, Clock, Edit, Copy } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import CreateExamModal from '@/components/dashboard/CreateExamModal';
 import AddCandidateModal from '@/components/dashboard/AddCandidateModal';
 import SendInvitesModal from '@/components/dashboard/SendInvitesModal';
-import ViewExamModal from '@/components/dashboard/ViewExamModal';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import ExamSearch from '@/components/dashboard/ExamSearch';
+import MyExamsStats from '@/components/dashboard/MyExamsStats';
+import ExamCard from '@/components/dashboard/ExamCard';
 import { type ExamDetails } from '@/services/api';
 
 const MyExamsPage = () => {
@@ -39,7 +39,7 @@ const MyExamsPage = () => {
     }
   }, [user?.id, exams.length, loading, fetchExams]);
 
-  const handleDuplicateExam = async (exam: any) => {
+  const handleDuplicateExam = async (exam: ExamDetails) => {
     try {
       const duplicatedExam = {
         ...exam,
@@ -66,31 +66,17 @@ const MyExamsPage = () => {
     }
   };
 
-  const filteredExams = exams?.filter(exam =>
-    exam.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    exam.description.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
-
-  const getStatusBadge = (status: ExamDetails['status']) => {
-    const colors = {
-      draft: 'bg-gray-100 text-gray-800',
-      active: 'bg-green-100 text-green-800',
-      completed: 'bg-blue-100 text-blue-800'
-    };
-
-    return (
-      <Badge variant="secondary" className={colors[status]}>
-        {status}
-      </Badge>
-    );
-  };
-
   const handleEditExam = (examId: string) => {
     toast({
       title: 'Feature Coming Soon',
       description: 'Edit exam functionality will be implemented',
     });
   };
+
+  const filteredExams = exams?.filter(exam =>
+    exam.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    exam.description.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
 
   if (loading) {
     return (
@@ -121,121 +107,51 @@ const MyExamsPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">My Exams</h1>
-            <p className="text-gray-600">Manage your created examinations</p>
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 truncate">My Exams</h1>
+            <p className="text-gray-600 text-sm md:text-base">Manage your created examinations</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
             <AddCandidateModal />
             <SendInvitesModal />
             <CreateExamModal />
           </div>
         </div>
 
-        {/* Search and Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="md:col-span-1">
-            <CardContent className="p-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Search my exams..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {exams?.filter(e => e.status === 'active').length || 0}
-              </div>
-              <div className="text-sm text-gray-600">Active</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-gray-600">
-                {exams?.filter(e => e.status === 'draft').length || 0}
-              </div>
-              <div className="text-sm text-gray-600">Drafts</div>
-            </CardContent>
-          </Card>
+        {/* Search and Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-1">
+            <ExamSearch searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+          </div>
+          <div className="lg:col-span-2">
+            <MyExamsStats exams={exams} />
+          </div>
         </div>
 
         {/* Exams Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
           {filteredExams.map((exam) => (
-            <Card key={exam.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">{exam.title}</CardTitle>
-                  {getStatusBadge(exam.status)}
-                </div>
-                <p className="text-sm text-gray-600 line-clamp-2">{exam.description}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4 text-gray-400" />
-                    <span>{exam.duration} mins</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4 text-gray-400" />
-                    <span>{exam.candidates} candidates</span>
-                  </div>
-                </div>
-                
-                <div className="text-sm text-gray-500">
-                  <div>Created: {new Date(exam.createdAt).toLocaleDateString()}</div>
-                  <div>Completed: {exam.completedSubmissions}/{exam.candidates}</div>
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <ViewExamModal 
-                    exam={exam}
-                    trigger={
-                      <Button size="sm" variant="outline" className="flex-1">
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
-                      </Button>
-                    }
-                  />
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleEditExam(exam.id)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleDuplicateExam(exam)}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <ExamCard
+              key={exam.id}
+              exam={exam}
+              onEdit={handleEditExam}
+              onDuplicate={handleDuplicateExam}
+            />
           ))}
         </div>
 
+        {/* Empty State */}
         {filteredExams.length === 0 && !loading && (
           <Card>
-            <CardContent className="p-12 text-center">
+            <CardContent className="p-8 md:p-12 text-center">
               <div className="text-gray-400 mb-4">
                 <Users className="w-12 h-12 mx-auto" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No exams found</h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 mb-4 text-sm md:text-base">
                 {searchTerm ? 'Try adjusting your search terms.' : 'Get started by creating your first exam.'}
               </p>
               {!searchTerm && (
