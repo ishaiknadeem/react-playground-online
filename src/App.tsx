@@ -6,9 +6,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import store from './store/store';
 import { Toaster } from '@/components/ui/toaster';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import RouteErrorBoundary from './components/common/RouteErrorBoundary';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { useAuthInit } from './hooks/useAuthInit';
+
+// Page imports
 import Index from './pages/Index';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -57,77 +60,141 @@ const AppContent = () => {
       <div className="App">
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Signup />} />
-          <Route path="/candidate-login" element={<CandidateLogin />} />
-          <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path="/" element={
+            <RouteErrorBoundary routeName="Home">
+              <Index />
+            </RouteErrorBoundary>
+          } />
+          <Route path="/login" element={
+            <RouteErrorBoundary routeName="Login">
+              <Login />
+            </RouteErrorBoundary>
+          } />
+          <Route path="/register" element={
+            <RouteErrorBoundary routeName="Register">
+              <Signup />
+            </RouteErrorBoundary>
+          } />
+          <Route path="/candidate-login" element={
+            <RouteErrorBoundary routeName="Candidate Login">
+              <CandidateLogin />
+            </RouteErrorBoundary>
+          } />
+          <Route path="/unauthorized" element={
+            <RouteErrorBoundary routeName="Unauthorized">
+              <Unauthorized />
+            </RouteErrorBoundary>
+          } />
           
           {/* Public information pages */}
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/terms-of-service" element={<TermsOfService />} />
-          <Route path="/cookie-policy" element={<CookiePolicy />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
+          <Route path="/privacy-policy" element={
+            <RouteErrorBoundary routeName="Privacy Policy">
+              <PrivacyPolicy />
+            </RouteErrorBoundary>
+          } />
+          <Route path="/terms-of-service" element={
+            <RouteErrorBoundary routeName="Terms of Service">
+              <TermsOfService />
+            </RouteErrorBoundary>
+          } />
+          <Route path="/cookie-policy" element={
+            <RouteErrorBoundary routeName="Cookie Policy">
+              <CookiePolicy />
+            </RouteErrorBoundary>
+          } />
+          <Route path="/about" element={
+            <RouteErrorBoundary routeName="About">
+              <About />
+            </RouteErrorBoundary>
+          } />
+          <Route path="/contact" element={
+            <RouteErrorBoundary routeName="Contact">
+              <Contact />
+            </RouteErrorBoundary>
+          } />
           
           {/* Admin/Examiner protected routes */}
           <Route path="/dashboard" element={
-            <ProtectedRoute allowedRoles={['admin', 'examiner']}>
-              <Dashboard />
-            </ProtectedRoute>
+            <RouteErrorBoundary routeName="Dashboard">
+              <ProtectedRoute allowedRoles={['admin', 'examiner']}>
+                <Dashboard />
+              </ProtectedRoute>
+            </RouteErrorBoundary>
           } />
           
           {/* Admin only routes */}
           <Route path="/dashboard/examiners" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <ExaminersPage />
-            </ProtectedRoute>
+            <RouteErrorBoundary routeName="Examiners Management">
+              <ProtectedRoute allowedRoles={['admin']}>
+                <ExaminersPage />
+              </ProtectedRoute>
+            </RouteErrorBoundary>
           } />
           <Route path="/dashboard/exams" element={
-            <ProtectedRoute allowedRoles={['admin', 'examiner']}>
-              <AllExamsPage />
-            </ProtectedRoute>
+            <RouteErrorBoundary routeName="All Exams">
+              <ProtectedRoute allowedRoles={['admin', 'examiner']}>
+                <AllExamsPage />
+              </ProtectedRoute>
+            </RouteErrorBoundary>
           } />
           <Route path="/dashboard/my-exams" element={
-            <ProtectedRoute allowedRoles={['admin', 'examiner']}>
-              <MyExamsPage />
-            </ProtectedRoute>
+            <RouteErrorBoundary routeName="My Exams">
+              <ProtectedRoute allowedRoles={['admin', 'examiner']}>
+                <MyExamsPage />
+              </ProtectedRoute>
+            </RouteErrorBoundary>
           } />
           <Route path="/dashboard/candidates" element={
-            <ProtectedRoute allowedRoles={['admin', 'examiner']}>
-              <CandidatesPage />
-            </ProtectedRoute>
+            <RouteErrorBoundary routeName="Candidates Management">
+              <ProtectedRoute allowedRoles={['admin', 'examiner']}>
+                <CandidatesPage />
+              </ProtectedRoute>
+            </RouteErrorBoundary>
           } />
           <Route path="/dashboard/settings" element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <SettingsPage />
-            </ProtectedRoute>
+            <RouteErrorBoundary routeName="Settings">
+              <ProtectedRoute allowedRoles={['admin']}>
+                <SettingsPage />
+              </ProtectedRoute>
+            </RouteErrorBoundary>
           } />
           
           {/* Authenticated user routes (all roles) */}
           <Route path="/exam" element={
-            <ProtectedRoute>
-              <Exam />
-            </ProtectedRoute>
+            <RouteErrorBoundary routeName="Exam">
+              <ProtectedRoute>
+                <Exam />
+              </ProtectedRoute>
+            </RouteErrorBoundary>
           } />
           <Route path="/practice" element={
-            <ProtectedRoute>
-              <Practice />
-            </ProtectedRoute>
+            <RouteErrorBoundary routeName="Practice">
+              <ProtectedRoute>
+                <Practice />
+              </ProtectedRoute>
+            </RouteErrorBoundary>
           } />
           <Route path="/practice/problem" element={
-            <ProtectedRoute>
-              <PracticeProblem />
-            </ProtectedRoute>
+            <RouteErrorBoundary routeName="Practice Problem">
+              <ProtectedRoute>
+                <PracticeProblem />
+              </ProtectedRoute>
+            </RouteErrorBoundary>
           } />
           <Route path="/candidate-settings" element={
-            <ProtectedRoute>
-              <CandidateSettings />
-            </ProtectedRoute>
+            <RouteErrorBoundary routeName="Candidate Settings">
+              <ProtectedRoute>
+                <CandidateSettings />
+              </ProtectedRoute>
+            </RouteErrorBoundary>
           } />
           
           {/* Catch all route for 404 */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={
+            <RouteErrorBoundary routeName="404 Not Found">
+              <NotFound />
+            </RouteErrorBoundary>
+          } />
         </Routes>
         <Toaster />
       </div>

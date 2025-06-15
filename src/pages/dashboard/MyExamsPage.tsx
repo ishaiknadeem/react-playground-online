@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { getMyExams, createExam } from '@/store/actions/examActions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,30 +13,31 @@ import CreateExamModal from '@/components/dashboard/CreateExamModal';
 import AddCandidateModal from '@/components/dashboard/AddCandidateModal';
 import SendInvitesModal from '@/components/dashboard/SendInvitesModal';
 import ViewExamModal from '@/components/dashboard/ViewExamModal';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { type ExamDetails } from '@/services/api';
 
 const MyExamsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [hasInitialized, setHasInitialized] = useState(false);
   const dispatch = useAppDispatch();
   const { myExams: exams, loading, error } = useAppSelector(state => state.exam);
   const { user } = useAppSelector(state => state.auth);
   const { toast } = useToast();
 
-  useEffect(() => {
-    console.log('MyExamsPage useEffect triggered', { 
-      userId: user?.id, 
-      examsLength: exams?.length, 
-      loading, 
-      hasInitialized 
-    });
-    
-    if (user?.id && !hasInitialized && !loading) {
-      console.log('Dispatching getMyExams for user:', user.id);
-      setHasInitialized(true);
+  // Memoized fetch function to prevent recreation on every render
+  const fetchExams = useCallback(() => {
+    if (user?.id) {
+      console.log('Fetching exams for user:', user.id);
       dispatch(getMyExams(user.id));
     }
-  }, [dispatch, user?.id, hasInitialized, loading]);
+  }, [dispatch, user?.id]);
+
+  // Fixed useEffect with proper dependencies
+  useEffect(() => {
+    console.log('MyExamsPage mounted, user:', user?.id);
+    if (user?.id && exams.length === 0 && !loading) {
+      fetchExams();
+    }
+  }, [user?.id, exams.length, loading, fetchExams]);
 
   const handleDuplicateExam = async (exam: any) => {
     try {
@@ -91,21 +93,31 @@ const MyExamsPage = () => {
   };
 
   if (loading) {
-    console.log('MyExamsPage is loading...');
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <LoadingSpinner size="lg" text="Loading your exams..." />
         </div>
       </DashboardLayout>
     );
   }
 
   if (error) {
-    console.error('Error loading my exams:', error);
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-6 text-center">
+              <p className="text-red-600 mb-4">Failed to load exams</p>
+              <Button onClick={fetchExams} variant="outline">
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
   }
-
-  console.log('MyExamsPage rendering with exams:', exams?.length || 0);
 
   return (
     <DashboardLayout>
@@ -216,7 +228,7 @@ const MyExamsPage = () => {
           ))}
         </div>
 
-        {filteredExams.length === 0 && (
+        {filteredExams.length === 0 && !loading && (
           <Card>
             <CardContent className="p-12 text-center">
               <div className="text-gray-400 mb-4">
