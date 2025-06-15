@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
@@ -8,6 +9,7 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { useAuthInit } from './hooks/useAuthInit';
+import Index from './pages/Index';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
@@ -47,7 +49,8 @@ const AppContent = () => {
       <div className="App">
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Signup />} />
           <Route path="/candidate-login" element={<CandidateLogin />} />
           <Route path="/unauthorized" element={<Unauthorized />} />

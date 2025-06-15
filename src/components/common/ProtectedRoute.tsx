@@ -15,7 +15,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requireAuth = true,
   allowedRoles = [],
-  redirectTo = '/'
+  redirectTo = '/login'
 }) => {
   const { isAuthenticated, user, loading, initialized } = useAppSelector(state => state.auth);
   const location = useLocation();
