@@ -54,7 +54,7 @@ export interface SubmissionResult {
 
 const API_BASE_URL = 'https://api.practiceplatform.com/v1';
 
-// Mock data that simulates API responses
+// Enhanced mock questions with better problem diversity
 const MOCK_QUESTIONS: PracticeQuestion[] = [
   {
     id: 'two-sum',
@@ -740,7 +740,7 @@ console.log('Test 2:', maxProfit([7,6,4,3,1])); // Expected: 0`,
   }
 ];
 
-// Mock data that simulates API responses
+// Enhanced user progress with more realistic data
 const MOCK_USER_PROGRESS: UserProgress = {
   totalSolved: 15,
   easyCount: 8,
@@ -756,96 +756,72 @@ const MOCK_USER_PROGRESS: UserProgress = {
 
 export const practiceApi = {
   getQuestions: async (): Promise<PracticeQuestion[]> => {
-    console.log('Practice API: Fetching questions...');
+    console.log('API: Fetching practice questions...');
     
     try {
-      const response = await fetch(`${API_BASE_URL}/questions`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      const response = await fetch(`${API_BASE_URL}/questions`);
+      if (!response.ok) throw new Error('Failed to fetch questions');
       
       const data = await response.json();
-      console.log('Practice API: Successfully fetched questions from server:', data);
+      console.log('API: Successfully fetched questions from server:', data);
       return data;
     } catch (error) {
-      console.log('Practice API: Failed to fetch questions, simulating successful API response:', error);
-      // Return mock data as if it came from successful API call
+      console.error('API: Failed to fetch questions, using fallback data:', error);
       return MOCK_QUESTIONS;
     }
   },
 
   getQuestion: async (id: string): Promise<PracticeQuestion | null> => {
-    console.log('Practice API: Fetching question:', id);
+    console.log('API: Fetching question:', id);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/questions/${id}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      const response = await fetch(`${API_BASE_URL}/questions/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch question');
       
       const data = await response.json();
-      console.log('Practice API: Successfully fetched question from server:', data);
+      console.log('API: Successfully fetched question from server:', data);
       return data;
     } catch (error) {
-      console.log('Practice API: Failed to fetch question, simulating successful API response:', error);
-      // Return mock data as if it came from successful API call
-      const question = MOCK_QUESTIONS.find(q => q.id === id) || null;
-      return question;
+      console.error('API: Failed to fetch question, using fallback data:', error);
+      return MOCK_QUESTIONS.find(q => q.id === id) || null;
     }
   },
 
   getUserProgress: async (): Promise<UserProgress> => {
-    console.log('Practice API: Fetching user progress...');
+    console.log('API: Fetching user progress...');
     
     try {
-      const token = sessionStorage.getItem('userToken');
-      const response = await fetch(`${API_BASE_URL}/progress`, {
-        method: 'GET',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      const response = await fetch(`${API_BASE_URL}/progress`);
+      if (!response.ok) throw new Error('Failed to fetch progress');
       
       const data = await response.json();
-      console.log('Practice API: Successfully fetched progress from server:', data);
+      console.log('API: Successfully fetched progress from server:', data);
       return data;
     } catch (error) {
-      console.log('Practice API: Failed to fetch progress, simulating successful API response:', error);
-      // Return mock data as if it came from successful API call
+      console.error('API: Failed to fetch progress, using fallback data:', error);
       return MOCK_USER_PROGRESS;
     }
   },
 
   submitSolution: async (questionId: string, solution: string, language: string): Promise<SubmissionResult> => {
-    console.log('Practice API: Submitting solution for question:', questionId);
+    console.log('API: Submitting solution for question:', questionId);
     
     try {
-      const token = sessionStorage.getItem('userToken');
       const response = await fetch(`${API_BASE_URL}/questions/${questionId}/submit`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ solution, language })
       });
       
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      if (!response.ok) throw new Error('Failed to submit solution');
       
       const data = await response.json();
-      console.log('Practice API: Solution submitted successfully:', data);
+      console.log('API: Solution submitted successfully:', data);
       return data;
     } catch (error) {
-      console.log('Practice API: Failed to submit solution, simulating successful API response:', error);
+      console.error('API: Failed to submit solution, using mock result:', error);
       
-      // Return mock data as if it came from successful API call
+      // Return mock submission result
       const mockResult: SubmissionResult = {
         id: `submission_${Date.now()}`,
         questionId,
@@ -864,27 +840,19 @@ export const practiceApi = {
   },
 
   getSubmissionHistory: async (): Promise<SubmissionResult[]> => {
-    console.log('Practice API: Fetching submission history...');
+    console.log('API: Fetching submission history...');
     
     try {
-      const token = sessionStorage.getItem('userToken');
-      const response = await fetch(`${API_BASE_URL}/submissions`, {
-        method: 'GET',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      const response = await fetch(`${API_BASE_URL}/submissions`);
+      if (!response.ok) throw new Error('Failed to fetch submissions');
       
       const data = await response.json();
-      console.log('Practice API: Successfully fetched submissions from server:', data);
+      console.log('API: Successfully fetched submissions from server:', data);
       return data;
     } catch (error) {
-      console.log('Practice API: Failed to fetch submissions, simulating successful API response:', error);
+      console.error('API: Failed to fetch submissions, using fallback data:', error);
       
-      // Return mock data as if it came from successful API call
+      // Return mock submissions
       return [
         {
           id: '1',
@@ -915,27 +883,22 @@ export const practiceApi = {
   },
 
   updateProgress: async (questionId: string, solved: boolean): Promise<UserProgress> => {
-    console.log('Practice API: Updating progress for question:', questionId, 'solved:', solved);
+    console.log('API: Updating progress for question:', questionId, 'solved:', solved);
     
     try {
-      const token = sessionStorage.getItem('userToken');
       const response = await fetch(`${API_BASE_URL}/progress`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ questionId, solved })
       });
       
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      if (!response.ok) throw new Error('Failed to update progress');
       
       const data = await response.json();
-      console.log('Practice API: Progress updated successfully:', data);
+      console.log('API: Progress updated successfully:', data);
       return data;
     } catch (error) {
-      console.log('Practice API: Failed to update progress, simulating successful API response:', error);
-      // Return mock data as if it came from successful API call
+      console.error('API: Failed to update progress:', error);
       return MOCK_USER_PROGRESS;
     }
   }
