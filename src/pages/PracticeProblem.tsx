@@ -6,6 +6,7 @@ import { ArrowLeft, Code, BookOpen, Clock } from 'lucide-react';
 import ExamInterface from '@/components/exam/ExamInterface';
 import { practiceApi } from '@/services/practiceApi';
 import { useQuery } from '@tanstack/react-query';
+import PracticeSubmitted from '@/components/exam/PracticeSubmitted';
 
 const PracticeProblem = () => {
   const [searchParams] = useSearchParams();
@@ -13,6 +14,8 @@ const PracticeProblem = () => {
   const pathId = searchParams.get('path');
   const navigate = useNavigate();
   const [startTime] = useState<Date>(new Date());
+  const [status, setStatus] = useState<'started' | 'submitted'>('started');
+  const [submissionData, setSubmissionData] = useState<any>(null);
 
   const { data: question, isLoading, error } = useQuery({
     queryKey: ['practice-question', problemId],
@@ -23,14 +26,30 @@ const PracticeProblem = () => {
   const handleSubmit = async (code: any, testResults: any, tabSwitchData: any) => {
     console.log('Practice submission:', { problemId, code, testResults, tabSwitchData });
     
-    if (problemId && code.javascript) {
+    if (problemId && code) {
       try {
-        await practiceApi.submitSolution(problemId, code.javascript, 'javascript');
+        await practiceApi.submitSolution(problemId, code, 'javascript');
       } catch (error) {
         console.error('Failed to submit solution:', error);
       }
     }
     
+    // Calculate time taken
+    const timeTaken = Math.floor((new Date().getTime() - startTime.getTime()) / 60000);
+    
+    // Set submission data and show success screen
+    setSubmissionData({
+      code,
+      testResults,
+      timeTaken,
+      submittedAt: new Date().toISOString(),
+      tabSwitchData
+    });
+    
+    setStatus('submitted');
+  };
+
+  const handleContinue = () => {
     // If this is part of a learning path, navigate to next problem
     if (pathId) {
       // In a real implementation, you'd get the next problem in the path
@@ -74,6 +93,18 @@ const PracticeProblem = () => {
     ...question,
     timeLimit: question.timeEstimate,
   };
+
+  // Show success screen after submission
+  if (status === 'submitted' && submissionData) {
+    return (
+      <PracticeSubmitted 
+        question={examQuestion}
+        submissionData={submissionData}
+        pathId={pathId}
+        onContinue={handleContinue}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
