@@ -5,6 +5,13 @@ interface ProctoringSubmissionData {
   screenBlobs: Blob[];
   violations: any[];
   submittedAt: string;
+  submittedBy: {
+    userId?: string;
+    email?: string;
+    name?: string;
+    type?: string;
+    sessionId?: string;
+  };
 }
 
 export const proctoringApi = {
@@ -16,6 +23,7 @@ export const proctoringApi = {
       formData.append('examId', data.examId);
       formData.append('submittedAt', data.submittedAt);
       formData.append('violations', JSON.stringify(data.violations));
+      formData.append('submittedBy', JSON.stringify(data.submittedBy));
       
       // Add webcam recordings
       data.webcamBlobs.forEach((blob, index) => {
