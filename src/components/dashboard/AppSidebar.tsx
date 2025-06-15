@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Code, BarChart3, Users, FileText, Settings, User, LogOut } from 'lucide-react';
+import { Code, BarChart3, Users, FileText, Settings, User, LogOut, ChevronUp } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -16,6 +17,15 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAppSelector, useAppDispatch } from '@/store/store';
 import { logoutUser } from '@/store/actions/authActions';
 import { useNavigate } from 'react-router-dom';
@@ -39,6 +49,17 @@ export function AppSidebar() {
     }
   };
 
+  const handleAccountSettings = () => {
+    navigate('/dashboard/settings');
+    handleNavigation();
+  };
+
+  const handleProfile = () => {
+    // For now, redirect to settings. Later this could be a separate profile page
+    navigate('/dashboard/settings');
+    handleNavigation();
+  };
+
   const adminNavItems = [
     { icon: BarChart3, label: 'Dashboard', href: '/dashboard' },
     { icon: Users, label: 'Examiners', href: '/dashboard/examiners' },
@@ -53,6 +74,13 @@ export function AppSidebar() {
   ];
 
   const navItems = user?.role === 'admin' ? adminNavItems : examinerNavItems;
+
+  const getUserInitials = (name: string, email: string) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return email.split('@')[0].slice(0, 2).toUpperCase();
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -99,27 +127,59 @@ export function AppSidebar() {
       <SidebarFooter className="border-t">
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600">
-              <User className="w-4 h-4 flex-shrink-0" />
-              {state === 'expanded' && (
-                <span className="truncate">{user?.email}</span>
-              )}
-            </div>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton 
-              asChild
-              tooltip={state === 'collapsed' ? 'Logout' : undefined}
-            >
-              <Button 
-                variant="ghost" 
-                onClick={handleLogout}
-                className="w-full justify-start text-red-600 hover:bg-red-50"
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
+                  <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarFallback className="rounded-lg">
+                      {getUserInitials(user?.name || '', user?.email || '')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">{user?.name || 'User'}</span>
+                    <span className="truncate text-xs">{user?.email}</span>
+                  </div>
+                  <ChevronUp className="ml-auto size-4" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+                side={state === 'collapsed' ? 'right' : 'top'}
+                align="end"
+                sideOffset={4}
               >
-                <LogOut className="w-4 h-4 flex-shrink-0" />
-                {state === 'expanded' && <span className="ml-2">Logout</span>}
-              </Button>
-            </SidebarMenuButton>
+                <DropdownMenuLabel className="p-0 font-normal">
+                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                    <Avatar className="h-8 w-8 rounded-lg">
+                      <AvatarFallback className="rounded-lg">
+                        {getUserInitials(user?.name || '', user?.email || '')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-semibold">{user?.name || 'User'}</span>
+                      <span className="truncate text-xs">{user?.email}</span>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleProfile}>
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleAccountSettings}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Account Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
