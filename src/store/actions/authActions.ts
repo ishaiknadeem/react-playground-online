@@ -58,12 +58,15 @@ const getMockCredentials = () => ({
 export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => async (dispatch: any) => {
   console.log('Auth Action: Starting login process for', userType);
   
+  // Start loading
+  dispatch({ type: REQUEST_LOGIN });
+  
   const url = `${baseUrl}/auth/login`;
   const params = {
     headers: {
       'content-type': 'application/json',
     },
-    dispatch,
+    dispatch: null, // Don't let callApi dispatch, we'll handle it ourselves
     method: 'POST',
     url,
     body: JSON.stringify({ ...data, userType }),
@@ -73,6 +76,13 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
   try {
     const response = await callApi(params);
     console.log('Auth Action: Login API success:', response);
+    
+    // Dispatch success manually
+    const successAction = {
+      type: 'SUCCESS_LOGIN',
+      payload: response
+    };
+    dispatch(successAction);
     return response;
   } catch (error) {
     console.error('Auth Action: Login API failed, using fallback:', error);
@@ -88,7 +98,7 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
         payload: { error: { message: 'Invalid email or password' } }
       };
       dispatch(errorAction);
-      throw new Error('Invalid email or password');
+      return null;
     }
     
     // Create mock response and dispatch success manually
@@ -104,7 +114,6 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
     dispatch(successAction);
     
     console.log('Auth Action: Fallback login success for:', foundUser.email);
-    // Return the mock response instead of throwing an error
     return mockResponse;
   }
 };
@@ -112,12 +121,15 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
 export const signupUser = (data: SignupData) => async (dispatch: any) => {
   console.log('Auth Action: Starting signup process');
   
+  // Start loading
+  dispatch({ type: REQUEST_SIGNUP });
+  
   const url = `${baseUrl}/auth/signup`;
   const params = {
     headers: {
       'content-type': 'application/json',
     },
-    dispatch,
+    dispatch: null, // Don't let callApi dispatch, we'll handle it ourselves
     method: 'POST',
     url,
     body: JSON.stringify(data),
@@ -127,6 +139,13 @@ export const signupUser = (data: SignupData) => async (dispatch: any) => {
   try {
     const response = await callApi(params);
     console.log('Auth Action: Signup API success:', response);
+    
+    // Dispatch success manually
+    const successAction = {
+      type: 'SUCCESS_SIGNUP',
+      payload: response
+    };
+    dispatch(successAction);
     return response;
   } catch (error) {
     console.error('Auth Action: Signup API failed, using fallback:', error);
@@ -138,7 +157,7 @@ export const signupUser = (data: SignupData) => async (dispatch: any) => {
         payload: { error: { message: 'Email already exists' } }
       };
       dispatch(errorAction);
-      throw new Error('Email already exists');
+      return null;
     }
     
     if (data.password.length < 6) {
@@ -147,7 +166,7 @@ export const signupUser = (data: SignupData) => async (dispatch: any) => {
         payload: { error: { message: 'Password must be at least 6 characters long' } }
       };
       dispatch(errorAction);
-      throw new Error('Password must be at least 6 characters long');
+      return null;
     }
     
     // Create mock response and dispatch success manually
@@ -164,7 +183,6 @@ export const signupUser = (data: SignupData) => async (dispatch: any) => {
     dispatch(successAction);
     
     console.log('Auth Action: Fallback signup success for:', data.email);
-    // Return the mock response instead of throwing an error
     return mockResponse;
   }
 };
