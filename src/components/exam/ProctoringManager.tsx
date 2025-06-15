@@ -85,7 +85,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
   const initializeScreenRecording = useCallback(async () => {
     try {
       const screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: { mediaSource: 'screen' },
+        video: true,
         audio: true
       });
       

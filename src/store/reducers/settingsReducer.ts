@@ -6,7 +6,13 @@ interface SettingsState {
 }
 
 const initialState: SettingsState = {
-  settings: null,
+  settings: {
+    proctoring: true, // Enable proctoring by default
+    webcamMonitoring: true,
+    screenRecording: true,
+    browserLockdown: true,
+    faceDetection: true
+  },
   loading: false,
   error: null,
 };
@@ -25,7 +31,14 @@ const settingsReducer = (state = initialState, action: any): SettingsState => {
     case 'SUCCESS_UPDATE_SETTINGS':
       return {
         ...state,
-        settings: action.payload,
+        settings: {
+          proctoring: true, // Always ensure proctoring is enabled
+          webcamMonitoring: true,
+          screenRecording: true,
+          browserLockdown: true,
+          faceDetection: true,
+          ...action.payload
+        },
         loading: false,
         error: null,
       };
