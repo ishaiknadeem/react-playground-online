@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import CandidateLayout from '@/components/dashboard/CandidateLayout';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -224,213 +224,211 @@ const Practice = () => {
   }
 
   return (
-    <CandidateLayout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-        {/* Header */}
-        <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
-                  <Code2 className="w-6 h-6 text-blue-600" />
-                  <span className="text-lg font-semibold text-slate-900">Practice</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <Code2 className="w-6 h-6 text-blue-600" />
+                <span className="text-lg font-semibold text-slate-900">Practice</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <div className="hidden md:flex items-center space-x-4 text-sm text-slate-600">
+                <div className="flex items-center space-x-1">
+                  <Zap className="w-4 h-4 text-orange-500" />
+                  <span>{enhancedUserProgress.streak}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Trophy className="w-4 h-4 text-emerald-500" />
+                  <span>{enhancedUserProgress.totalSolved}</span>
                 </div>
               </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="hidden md:flex items-center space-x-4 text-sm text-slate-600">
-                  <div className="flex items-center space-x-1">
-                    <Zap className="w-4 h-4 text-orange-500" />
-                    <span>{enhancedUserProgress.streak}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Trophy className="w-4 h-4 text-emerald-500" />
-                    <span>{enhancedUserProgress.totalSolved}</span>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-600">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">Logout</span>
-                </Button>
-              </div>
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-600">
+                <LogOut className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="max-w-6xl mx-auto px-6 py-8">
-          <Tabs value={activeTab} onValueChange={(value) => navigate(`/practice?tab=${value}`)} className="space-y-8">
-            <TabsList className="grid w-full grid-cols-5 max-w-lg mx-auto bg-white/60 backdrop-blur-sm">
-              <TabsTrigger value="problems" className="text-sm">Problems</TabsTrigger>
-              <TabsTrigger value="paths" className="text-sm">Paths</TabsTrigger>
-              <TabsTrigger value="interview" className="text-sm">Interview</TabsTrigger>
-              <TabsTrigger value="progress" className="text-sm">Progress</TabsTrigger>
-              <TabsTrigger value="history" className="text-sm">History</TabsTrigger>
-            </TabsList>
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <Tabs value={activeTab} onValueChange={(value) => navigate(`/practice?tab=${value}`)} className="space-y-8">
+          <TabsList className="grid w-full grid-cols-5 max-w-lg mx-auto bg-white/60 backdrop-blur-sm">
+            <TabsTrigger value="problems" className="text-sm">Problems</TabsTrigger>
+            <TabsTrigger value="paths" className="text-sm">Paths</TabsTrigger>
+            <TabsTrigger value="interview" className="text-sm">Interview</TabsTrigger>
+            <TabsTrigger value="progress" className="text-sm">Progress</TabsTrigger>
+            <TabsTrigger value="history" className="text-sm">History</TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="problems" className="space-y-6">
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                  <div className="flex items-center space-x-2">
-                    <Trophy className="w-5 h-5 text-emerald-500" />
-                    <div>
-                      <p className="text-lg font-semibold text-slate-900">{enhancedUserProgress.totalSolved}</p>
-                      <p className="text-xs text-slate-600">Solved</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                  <div className="flex items-center space-x-2">
-                    <Zap className="w-5 h-5 text-orange-500" />
-                    <div>
-                      <p className="text-lg font-semibold text-slate-900">{enhancedUserProgress.streak}</p>
-                      <p className="text-xs text-slate-600">Day Streak</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                  <div className="flex items-center space-x-2">
-                    <Target className="w-5 h-5 text-blue-500" />
-                    <div>
-                      <p className="text-lg font-semibold text-slate-900">{questions.length}</p>
-                      <p className="text-xs text-slate-600">Available</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                  <div className="flex items-center space-x-2">
-                    <Clock className="w-5 h-5 text-purple-500" />
-                    <div>
-                      <p className="text-lg font-semibold text-slate-900">{enhancedUserProgress.practiceTime}</p>
-                      <p className="text-xs text-slate-600">Practice Time</p>
-                    </div>
+          <TabsContent value="problems" className="space-y-6">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center space-x-2">
+                  <Trophy className="w-5 h-5 text-emerald-500" />
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900">{enhancedUserProgress.totalSolved}</p>
+                    <p className="text-xs text-slate-600">Solved</p>
                   </div>
                 </div>
               </div>
-
-              {/* Search and Filters */}
-              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="flex flex-col lg:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                      <Input
-                        placeholder="Search problems..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-white/80 border-slate-200"
-                      />
-                    </div>
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center space-x-2">
+                  <Zap className="w-5 h-5 text-orange-500" />
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900">{enhancedUserProgress.streak}</p>
+                    <p className="text-xs text-slate-600">Day Streak</p>
                   </div>
+                </div>
+              </div>
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center space-x-2">
+                  <Target className="w-5 h-5 text-blue-500" />
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900">{questions.length}</p>
+                    <p className="text-xs text-slate-600">Available</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div className="flex items-center space-x-2">
+                  <Clock className="w-5 h-5 text-purple-500" />
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900">{enhancedUserProgress.practiceTime}</p>
+                    <p className="text-xs text-slate-600">Practice Time</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Search and Filters */}
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <Input
+                      placeholder="Search problems..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 bg-white/80 border-slate-200"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex gap-3">
+                  <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+                    <SelectTrigger className="w-32 bg-white/80">
+                      <SelectValue placeholder="Difficulty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="Easy">Easy</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="Hard">Hard</SelectItem>
+                    </SelectContent>
+                  </Select>
                   
-                  <div className="flex gap-3">
-                    <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-                      <SelectTrigger className="w-32 bg-white/80">
-                        <SelectValue placeholder="Difficulty" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="Easy">Easy</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="Hard">Hard</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="w-40 bg-white/80">
-                        <SelectValue placeholder="Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {categories.map(category => (
-                          <SelectItem key={category} value={category}>{category}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger className="w-40 bg-white/80">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {categories.map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
+            </div>
 
-              {/* Problems List */}
-              <div className="space-y-3">
-                {filteredAndSortedQuestions.map((question) => (
-                  <div key={question.id} className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/80 transition-all duration-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-3 mb-3">
-                          <h3 className="text-lg font-medium text-slate-900 truncate">{question.title}</h3>
-                          <Badge className={`${getDifficultyColor(question.difficulty)} text-xs px-2 py-1`}>
-                            {question.difficulty}
+            {/* Problems List */}
+            <div className="space-y-3">
+              {filteredAndSortedQuestions.map((question) => (
+                <div key={question.id} className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:bg-white/80 transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <h3 className="text-lg font-medium text-slate-900 truncate">{question.title}</h3>
+                        <Badge className={`${getDifficultyColor(question.difficulty)} text-xs px-2 py-1`}>
+                          {question.difficulty}
+                        </Badge>
+                        {question.solved && (
+                          <Badge className="text-emerald-600 bg-emerald-50 border border-emerald-200 text-xs">
+                            ✓ Solved
                           </Badge>
-                          {question.solved && (
-                            <Badge className="text-emerald-600 bg-emerald-50 border border-emerald-200 text-xs">
-                              ✓ Solved
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        <p className="text-slate-600 mb-3 text-sm line-clamp-2">{question.description.split('\n')[0]}</p>
-                        
-                        <div className="flex items-center space-x-4 text-xs text-slate-500">
-                          <div className="flex items-center space-x-1">
-                            <Clock className="w-3 h-3" />
-                            <span>~{question.timeEstimate}m</span>
-                          </div>
-                          <span>{question.category}</span>
-                          {question.likes && (
-                            <div className="flex items-center space-x-1">
-                              <Heart className="w-3 h-3" />
-                              <span>{question.likes}</span>
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </div>
                       
-                      <Button 
-                        onClick={() => handleStartProblem(question.id)}
-                        size="sm"
-                        className="ml-4 bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        <Play className="w-4 h-4 mr-2" />
-                        Start
-                      </Button>
+                      <p className="text-slate-600 mb-3 text-sm line-clamp-2">{question.description.split('\n')[0]}</p>
+                      
+                      <div className="flex items-center space-x-4 text-xs text-slate-500">
+                        <div className="flex items-center space-x-1">
+                          <Clock className="w-3 h-3" />
+                          <span>~{question.timeEstimate}m</span>
+                        </div>
+                        <span>{question.category}</span>
+                        {question.likes && (
+                          <div className="flex items-center space-x-1">
+                            <Heart className="w-3 h-3" />
+                            <span>{question.likes}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    
+                    <Button 
+                      onClick={() => handleStartProblem(question.id)}
+                      size="sm"
+                      className="ml-4 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Play className="w-4 h-4 mr-2" />
+                      Start
+                    </Button>
                   </div>
-                ))}
+                </div>
+              ))}
 
-                {filteredAndSortedQuestions.length === 0 && (
-                  <div className="bg-white/60 backdrop-blur-sm rounded-xl p-12 text-center border border-white/20">
-                    <Search className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-slate-900 mb-2">No problems found</h3>
-                    <p className="text-slate-600">Try adjusting your search criteria.</p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
+              {filteredAndSortedQuestions.length === 0 && (
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-12 text-center border border-white/20">
+                  <Search className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">No problems found</h3>
+                  <p className="text-slate-600">Try adjusting your search criteria.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
 
-            <TabsContent value="paths" className="space-y-6">
-              <LearningPaths paths={learningPaths} onStartPath={handleStartPath} />
-            </TabsContent>
+          <TabsContent value="paths" className="space-y-6">
+            <LearningPaths paths={learningPaths} onStartPath={handleStartPath} />
+          </TabsContent>
 
-            <TabsContent value="interview" className="space-y-6">
-              <InterviewPrepMode onStartSession={handleStartInterviewSession} />
-            </TabsContent>
+          <TabsContent value="interview" className="space-y-6">
+            <InterviewPrepMode onStartSession={handleStartInterviewSession} />
+          </TabsContent>
 
-            <TabsContent value="progress" className="space-y-6">
-              <ProgressTracker 
-                userProgress={enhancedUserProgress} 
-                totalQuestions={totalQuestions}
-              />
-              <AchievementBadges achievements={achievements} />
-            </TabsContent>
+          <TabsContent value="progress" className="space-y-6">
+            <ProgressTracker 
+              userProgress={enhancedUserProgress} 
+              totalQuestions={totalQuestions}
+            />
+            <AchievementBadges achievements={achievements} />
+          </TabsContent>
 
-            <TabsContent value="history" className="space-y-6">
-              <SubmissionHistory onRetryProblem={handleRetryProblem} />
-            </TabsContent>
-          </Tabs>
-        </div>
+          <TabsContent value="history" className="space-y-6">
+            <SubmissionHistory onRetryProblem={handleRetryProblem} />
+          </TabsContent>
+        </Tabs>
       </div>
-    </CandidateLayout>
+    </div>
   );
 };
 
