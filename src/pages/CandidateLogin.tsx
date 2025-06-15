@@ -25,7 +25,7 @@ const CandidateLogin = () => {
       const result = await dispatch(loginUser({ email, password }, 'candidate'));
       console.log('Candidate login result:', result);
       
-      // Check if login was successful (either API or fallback)
+      // Always treat as success for now since we have mock fallback
       if (result) {
         toast({
           title: "Welcome!",

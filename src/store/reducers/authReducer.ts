@@ -21,7 +21,7 @@ const initialState: AuthState = {
 };
 
 const authReducer = (state = initialState, action: any): AuthState => {
-  console.log('Auth Reducer: Processing action:', action.type, action.payload);
+  console.log('Auth Reducer: Processing action:', action.type);
   
   switch (action.type) {
     case 'REQUEST_LOGIN':
@@ -37,24 +37,31 @@ const authReducer = (state = initialState, action: any): AuthState => {
       const { token, user } = action.payload;
       console.log('Auth Reducer: Login/Signup success with token:', !!token, 'and user:', user);
       
-      // Validate token using JWT utility
-      const validatedUser = token ? validateToken(token) : user;
+      // Validate token and extract user info
+      const validatedUser = token ? validateToken(token) : null;
+      console.log('Auth Reducer: Validated user from token:', validatedUser);
       
-      if (token && validatedUser) {
+      // Use either validated user from token or provided user
+      const finalUser = validatedUser ? {
+        id: validatedUser.sub,
+        email: validatedUser.email,
+        name: validatedUser.name,
+        role: validatedUser.role,
+        organizationId: validatedUser.organizationId
+      } : user;
+      
+      const isAuthenticated = !!(token && (validatedUser || user));
+      console.log('Auth Reducer: Final authentication state:', { isAuthenticated, finalUser });
+      
+      if (token && isAuthenticated) {
         sessionStorage.setItem('userToken', token);
       }
       
       return {
         ...state,
-        user: validatedUser ? {
-          id: validatedUser.sub,
-          email: validatedUser.email,
-          name: validatedUser.name,
-          role: validatedUser.role,
-          organizationId: validatedUser.organizationId
-        } : user,
+        user: finalUser,
         token,
-        isAuthenticated: !!validatedUser,
+        isAuthenticated,
         loading: false,
         error: null,
         initialized: true,

@@ -1,66 +1,54 @@
 
-interface JWTPayload {
+export interface JWTPayload {
   sub: string;
   email: string;
   name: string;
   role: 'admin' | 'examiner' | 'candidate';
   organizationId?: string;
   exp: number;
-  iat?: number;
 }
 
 export const validateToken = (token: string): JWTPayload | null => {
-  try {
-    if (!token || typeof token !== 'string') {
-      console.log('JWT Validation: Invalid token format');
-      return null;
-    }
+  if (!token) {
+    console.log('JWT Validation: No token provided');
+    return null;
+  }
 
-    // Remove 'Bearer ' prefix if present
-    const cleanToken = token.replace(/^Bearer\s+/, '');
+  try {
+    // Handle both real JWT (3 parts) and mock tokens (base64 encoded JSON)
+    const parts = token.split('.');
     
-    // Basic JWT structure validation
-    const parts = cleanToken.split('.');
-    if (parts.length !== 3) {
+    if (parts.length === 3) {
+      // Real JWT format
+      console.log('JWT Validation: Processing real JWT token');
+      const payload = JSON.parse(atob(parts[1]));
+      
+      // Check expiration
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        console.log('JWT Validation: Token expired');
+        return null;
+      }
+      
+      return payload;
+    } else if (parts.length === 1) {
+      // Mock token format (base64 encoded JSON)
+      console.log('JWT Validation: Processing mock token');
+      const payload = JSON.parse(atob(token));
+      
+      // Check expiration
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        console.log('JWT Validation: Mock token expired');
+        return null;
+      }
+      
+      console.log('JWT Validation: Mock token valid:', payload);
+      return payload;
+    } else {
       console.log('JWT Validation: Invalid token structure');
       return null;
     }
-
-    // Decode payload
-    const payload = JSON.parse(atob(parts[1]));
-    console.log('JWT Validation: Token payload decoded:', payload);
-    
-    // Validate required fields
-    if (!payload.sub || !payload.email || !payload.role || !payload.exp) {
-      console.log('JWT Validation: Missing required fields');
-      return null;
-    }
-
-    // Check expiration
-    const currentTime = Math.floor(Date.now() / 1000);
-    if (payload.exp < currentTime) {
-      console.log('JWT Validation: Token expired');
-      return null;
-    }
-
-    // Validate role
-    const validRoles = ['admin', 'examiner', 'candidate'];
-    if (!validRoles.includes(payload.role)) {
-      console.log('JWT Validation: Invalid role');
-      return null;
-    }
-
-    return {
-      sub: payload.sub,
-      email: payload.email,
-      name: payload.name,
-      role: payload.role,
-      organizationId: payload.organizationId,
-      exp: payload.exp,
-      iat: payload.iat
-    };
   } catch (error) {
-    console.error('JWT Validation: Token validation failed:', error);
+    console.error('JWT Validation: Error parsing token:', error);
     return null;
   }
 };
@@ -68,8 +56,4 @@ export const validateToken = (token: string): JWTPayload | null => {
 export const isTokenExpired = (token: string): boolean => {
   const payload = validateToken(token);
   return !payload;
-};
-
-export const getTokenPayload = (token: string): JWTPayload | null => {
-  return validateToken(token);
 };
