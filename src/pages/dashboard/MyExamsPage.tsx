@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { getMyExams, createExam } from '@/store/actions/examActions';
@@ -22,10 +23,13 @@ const MyExamsPage = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user?.id) {
+    console.log('MyExamsPage useEffect triggered', { userId: user?.id, examsLength: exams?.length });
+    
+    if (user?.id && (!exams || exams.length === 0)) {
+      console.log('Dispatching getMyExams for user:', user.id);
       dispatch(getMyExams(user.id));
     }
-  }, [dispatch, user?.id]);
+  }, [dispatch, user?.id]); // Removed exams from dependency to prevent infinite loop
 
   const handleDuplicateExam = async (exam: any) => {
     try {
@@ -45,6 +49,7 @@ const MyExamsPage = () => {
         description: 'Exam duplicated successfully',
       });
     } catch (error) {
+      console.error('Error duplicating exam:', error);
       toast({
         title: 'Error',
         description: 'Failed to duplicate exam',
@@ -73,7 +78,6 @@ const MyExamsPage = () => {
   };
 
   const handleEditExam = (examId: string) => {
-    // TODO: Navigate to edit exam page
     toast({
       title: 'Feature Coming Soon',
       description: 'Edit exam functionality will be implemented',
@@ -81,6 +85,7 @@ const MyExamsPage = () => {
   };
 
   if (loading) {
+    console.log('MyExamsPage is loading...');
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
@@ -93,6 +98,8 @@ const MyExamsPage = () => {
   if (error) {
     console.error('Error loading my exams:', error);
   }
+
+  console.log('MyExamsPage rendering with exams:', exams?.length || 0);
 
   return (
     <DashboardLayout>
