@@ -18,8 +18,10 @@ const initialState: AuthState = {
 const validateToken = (token: string): any | null => {
   try {
     const payload = JSON.parse(atob(token));
+    console.log('Auth Reducer: Validating token payload:', payload);
     
     if (payload.exp < Math.floor(Date.now() / 1000)) {
+      console.log('Auth Reducer: Token expired');
       return null;
     }
     
@@ -30,12 +32,15 @@ const validateToken = (token: string): any | null => {
       role: payload.role,
       organizationId: payload.organizationId
     };
-  } catch {
+  } catch (error) {
+    console.error('Auth Reducer: Token validation failed:', error);
     return null;
   }
 };
 
 const authReducer = (state = initialState, action: any): AuthState => {
+  console.log('Auth Reducer: Processing action:', action.type, action.payload);
+  
   switch (action.type) {
     case 'REQUEST_LOGIN':
     case 'REQUEST_SIGNUP':
@@ -48,9 +53,12 @@ const authReducer = (state = initialState, action: any): AuthState => {
     case 'SUCCESS_LOGIN':
     case 'SUCCESS_SIGNUP':
       const { token, user } = action.payload;
+      console.log('Auth Reducer: Login/Signup success with token:', !!token, 'and user:', user);
+      
       if (token) {
         sessionStorage.setItem('userToken', token);
       }
+      
       return {
         ...state,
         user: user || validateToken(token),
@@ -62,6 +70,7 @@ const authReducer = (state = initialState, action: any): AuthState => {
 
     case 'ERROR_LOGIN':
     case 'ERROR_SIGNUP':
+      console.log('Auth Reducer: Login/Signup error:', action.payload);
       return {
         ...state,
         loading: false,
@@ -69,6 +78,7 @@ const authReducer = (state = initialState, action: any): AuthState => {
       };
 
     case 'SUCCESS_LOGOUT':
+      console.log('Auth Reducer: Logout success');
       sessionStorage.removeItem('userToken');
       return {
         ...state,
@@ -82,6 +92,8 @@ const authReducer = (state = initialState, action: any): AuthState => {
     case 'SUCCESS_CHECK_AUTH':
       const storedToken = action.payload.token;
       const validatedUser = validateToken(storedToken);
+      console.log('Auth Reducer: Check auth result - user valid:', !!validatedUser);
+      
       return {
         ...state,
         user: validatedUser,
