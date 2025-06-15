@@ -101,17 +101,17 @@ const Index = () => {
                   <div className="ml-4 text-gray-400 text-sm">algorithm.js</div>
                 </div>
                 <div className="font-mono text-sm space-y-2">
-                  <div className="text-purple-400">function <span className="text-blue-400">twoSum</span><span className="text-gray-300">(nums, target) {</span></div>
+                  <div className="text-purple-400">function <span className="text-blue-400">twoSum</span><span className="text-gray-300">(nums, target) {"{"}</span></div>
                   <div className="text-gray-400 ml-4">// Find two numbers that add up to target</div>
                   <div className="text-blue-400 ml-4">const <span className="text-gray-300">map = new Map();</span></div>
-                  <div className="text-purple-400 ml-4">for <span className="text-gray-300">(let i = 0; i &lt; nums.length; i++) {</span></div>
+                  <div className="text-purple-400 ml-4">for <span className="text-gray-300">(let i = 0; i {"<"} nums.length; i++) {"{"}</span></div>
                   <div className="text-blue-400 ml-8">const <span className="text-gray-300">complement = target - nums[i];</span></div>
-                  <div className="text-purple-400 ml-8">if <span className="text-gray-300">(map.has(complement)) {</span></div>
+                  <div className="text-purple-400 ml-8">if <span className="text-gray-300">(map.has(complement)) {"{"}</span></div>
                   <div className="text-green-400 ml-12">return <span className="text-gray-300">[map.get(complement), i];</span></div>
-                  <div className="text-gray-300 ml-8">}</div>
+                  <div className="text-gray-300 ml-8">{"}"}</div>
                   <div className="text-gray-300 ml-8">map.set(nums[i], i);</div>
-                  <div className="text-gray-300 ml-4">}</div>
-                  <div className="text-gray-300">}</div>
+                  <div className="text-gray-300 ml-4">{"}"}</div>
+                  <div className="text-gray-300">{"}"}</div>
                 </div>
               </div>
               {/* Floating elements */}
