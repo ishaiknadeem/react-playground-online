@@ -1,6 +1,6 @@
-
 import { decodeJWT, isTokenExpired } from '../../utils/jwt';
 import { handleApiError, AppError } from '../../utils/errorHandler';
+import { logger } from '../../utils/logger';
 
 interface AuthState {
   user: any | null;
@@ -33,11 +33,12 @@ const validateToken = (token: string) => {
 };
 
 const authReducer = (state = initialState, action: any): AuthState => {
-  console.log('Auth Reducer: Processing action:', action.type);
+  logger.debug('Auth Reducer: Processing action', { type: action.type, payload: action.payload });
   
   switch (action.type) {
     case 'REQUEST_LOGIN':
     case 'REQUEST_SIGNUP':
+      logger.info(`Auth: ${action.type} request initiated`);
       return {
         ...state,
         loading: true,
@@ -47,11 +48,16 @@ const authReducer = (state = initialState, action: any): AuthState => {
     case 'SUCCESS_LOGIN':
     case 'SUCCESS_SIGNUP':
       const { token, user } = action.payload;
-      console.log('Auth Reducer: Login/Signup success with token:', !!token, 'and user:', user);
+      logger.info(`Auth: ${action.type} successful`, { hasToken: !!token, userId: user?.id });
       
       // Validate token and extract user info
       const validatedUser = token ? validateToken(token) : null;
-      console.log('Auth Reducer: Validated user from token:', validatedUser);
+      
+      if (validatedUser) {
+        logger.debug('Auth: Token validation successful', { userId: validatedUser.id, role: validatedUser.role });
+      } else if (token) {
+        logger.warn('Auth: Token validation failed');
+      }
       
       // Use either validated user from token or provided user
       const finalUser = validatedUser ? {
@@ -63,10 +69,10 @@ const authReducer = (state = initialState, action: any): AuthState => {
       } : user;
       
       const isAuthenticated = !!(token && (validatedUser || user));
-      console.log('Auth Reducer: Final authentication state:', { isAuthenticated, finalUser });
       
       if (token && isAuthenticated) {
         sessionStorage.setItem('userToken', token);
+        logger.info('Auth: Token stored in session storage');
       }
       
       return {
@@ -81,7 +87,7 @@ const authReducer = (state = initialState, action: any): AuthState => {
 
     case 'ERROR_LOGIN':
     case 'ERROR_SIGNUP':
-      console.log('Auth Reducer: Login/Signup error:', action.payload);
+      logger.error(`Auth: ${action.type} failed`, action.payload.error);
       const authError = handleApiError(action.payload.error, 'Authentication failed');
       return {
         ...state,
@@ -94,7 +100,7 @@ const authReducer = (state = initialState, action: any): AuthState => {
       };
 
     case 'SUCCESS_LOGOUT':
-      console.log('Auth Reducer: Logout success');
+      logger.info('Auth: Logout successful');
       sessionStorage.removeItem('userToken');
       return {
         ...state,
@@ -108,9 +114,11 @@ const authReducer = (state = initialState, action: any): AuthState => {
     case 'SUCCESS_CHECK_AUTH':
       const storedToken = action.payload.token;
       const tokenPayload = validateToken(storedToken);
-      console.log('Auth Reducer: Check auth result - user valid:', !!tokenPayload);
       
-      if (!tokenPayload) {
+      if (tokenPayload) {
+        logger.info('Auth: Check auth successful', { userId: tokenPayload.id });
+      } else {
+        logger.warn('Auth: Check auth failed - invalid token');
         sessionStorage.removeItem('userToken');
       }
       
@@ -129,6 +137,7 @@ const authReducer = (state = initialState, action: any): AuthState => {
       };
 
     case 'SET_AUTH_INITIALIZED':
+      logger.debug('Auth: Initialization flag set');
       return {
         ...state,
         initialized: true,
