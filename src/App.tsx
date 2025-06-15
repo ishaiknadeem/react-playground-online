@@ -1,11 +1,9 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import store from './store/store';
 import { Toaster } from '@/components/ui/toaster';
-import { ThemeProvider } from '@/contexts/ThemeContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import LoadingSpinner from './components/common/LoadingSpinner';
@@ -121,13 +119,11 @@ const AppContent = () => {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <Provider store={store}>
-          <QueryClientProvider client={queryClient}>
-            <AppContent />
-          </QueryClientProvider>
-        </Provider>
-      </ThemeProvider>
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <AppContent />
+        </QueryClientProvider>
+      </Provider>
     </ErrorBoundary>
   );
 }
