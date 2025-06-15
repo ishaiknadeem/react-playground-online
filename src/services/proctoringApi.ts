@@ -14,78 +14,53 @@ interface ProctoringSubmissionData {
   };
 }
 
-// Helper function to convert Blob to base64
-const blobToBase64 = (blob: Blob): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      // Remove the data URL prefix (e.g., "data:video/webm;base64,")
-      const base64Data = base64.split(',')[1];
-      resolve(base64Data);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-};
-
 export const proctoringApi = {
   async submitProctoringData(data: ProctoringSubmissionData) {
     try {
-      console.log('Converting proctoring data to JSON format...');
+      console.log('Preparing proctoring data for submission...');
       
-      // Convert webcam blobs to base64
-      const webcamRecordings = await Promise.all(
-        data.webcamBlobs.map(async (blob, index) => ({
-          index,
-          data: await blobToBase64(blob),
-          mimeType: blob.type || 'video/webm',
-          size: blob.size
-        }))
-      );
+      const formData = new FormData();
       
-      // Convert screen blobs to base64
-      const screenRecordings = await Promise.all(
-        data.screenBlobs.map(async (blob, index) => ({
-          index,
-          data: await blobToBase64(blob),
-          mimeType: blob.type || 'video/webm',
-          size: blob.size
-        }))
-      );
+      // Add metadata as JSON strings
+      formData.append('examId', data.examId);
+      formData.append('submittedAt', data.submittedAt);
+      formData.append('violations', JSON.stringify(data.violations));
+      formData.append('submittedBy', JSON.stringify(data.submittedBy));
       
-      // Prepare JSON payload
-      const jsonPayload = {
+      // Add metadata counts for easy backend processing
+      formData.append('metadata', JSON.stringify({
+        totalWebcamRecordings: data.webcamBlobs.length,
+        totalScreenRecordings: data.screenBlobs.length,
+        totalViolations: data.violations.length,
+        submissionTimestamp: new Date().toISOString()
+      }));
+      
+      // Add webcam recordings as blobs
+      data.webcamBlobs.forEach((blob, index) => {
+        formData.append(`webcam_${index}`, blob, `webcam_${index}.webm`);
+      });
+      
+      // Add screen recordings as blobs
+      data.screenBlobs.forEach((blob, index) => {
+        formData.append(`screen_${index}`, blob, `screen_${index}.webm`);
+      });
+      
+      console.log('Sending proctoring data with FormData:', {
         examId: data.examId,
-        submittedAt: data.submittedAt,
-        submittedBy: data.submittedBy,
-        violations: data.violations,
-        recordings: {
-          webcam: webcamRecordings,
-          screen: screenRecordings
-        },
-        metadata: {
-          totalWebcamRecordings: webcamRecordings.length,
-          totalScreenRecordings: screenRecordings.length,
-          totalViolations: data.violations.length,
-          submissionTimestamp: new Date().toISOString()
-        }
-      };
-      
-      console.log('Sending proctoring data as JSON:', {
-        examId: data.examId,
-        webcamCount: webcamRecordings.length,
-        screenCount: screenRecordings.length,
-        violationsCount: data.violations.length
+        webcamCount: data.webcamBlobs.length,
+        screenCount: data.screenBlobs.length,
+        violationsCount: data.violations.length,
+        totalSize: data.webcamBlobs.reduce((acc, blob) => acc + blob.size, 0) + 
+                   data.screenBlobs.reduce((acc, blob) => acc + blob.size, 0)
       });
       
       const response = await fetch('https://api.examplatform.com/v1/proctoring/submit', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
+          // Don't set Content-Type - let browser set it with boundary for FormData
         },
-        body: JSON.stringify(jsonPayload)
+        body: formData
       });
       
       if (!response.ok) {
