@@ -1,4 +1,3 @@
-
 import {
   REQUEST_LOGIN,
   REQUEST_SIGNUP,
@@ -54,7 +53,10 @@ const getAllMockCredentials = () => [
 ];
 
 export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => async (dispatch: any) => {
+  console.log('=== AUTH ACTION DEBUG START ===');
   console.log('Auth Action: Starting login process for', userType, 'with email:', data.email);
+  console.log('Auth Action: Password provided:', !!data.password);
+  console.log('Auth Action: Password length:', data.password?.length || 0);
   
   // Start loading
   dispatch({ type: REQUEST_LOGIN });
@@ -63,6 +65,8 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
     // ALWAYS try API first
     console.log('Auth Action: Attempting API login...');
     const apiUrl = `${baseUrl}/auth/login`;
+    console.log('Auth Action: API URL:', apiUrl);
+    
     const result = await callApi({
       dispatch,
       actionType: REQUEST_LOGIN,
@@ -82,6 +86,7 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
         payload: result
       };
       dispatch(successAction);
+      console.log('Auth Action: API login completed successfully');
       return result;
     }
   } catch (apiError) {
@@ -95,26 +100,36 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
   const allCredentials = getAllMockCredentials();
   const allowedRoles = userType === 'admin' ? ['admin', 'examiner'] : ['candidate'];
   
-  console.log('Auth Action: Looking for credentials with roles:', allowedRoles);
+  console.log('Auth Action: User type requested:', userType);
+  console.log('Auth Action: Allowed roles for this user type:', allowedRoles);
   console.log('Auth Action: Available credentials:', allCredentials.map(c => ({ email: c.email, role: c.role })));
-  console.log('Auth Action: Checking email:', data.email, 'password:', data.password);
+  console.log('Auth Action: Looking for email:', data.email);
+  console.log('Auth Action: Looking for password:', data.password);
   
   const foundUser = allCredentials.find(u => {
-    console.log('Auth Action: Comparing with:', u.email, u.password, u.role);
-    return u.email === data.email && 
-           u.password === data.password && 
-           allowedRoles.includes(u.role);
+    console.log(`Auth Action: Checking credential - Email: ${u.email} === ${data.email}? ${u.email === data.email}`);
+    console.log(`Auth Action: Checking credential - Password: ${u.password} === ${data.password}? ${u.password === data.password}`);
+    console.log(`Auth Action: Checking credential - Role allowed: ${u.role} in [${allowedRoles.join(', ')}]? ${allowedRoles.includes(u.role)}`);
+    
+    const emailMatch = u.email === data.email;
+    const passwordMatch = u.password === data.password;
+    const roleMatch = allowedRoles.includes(u.role);
+    
+    console.log(`Auth Action: Final match result: ${emailMatch && passwordMatch && roleMatch}`);
+    
+    return emailMatch && passwordMatch && roleMatch;
   });
   
-  console.log('Auth Action: Found matching user:', foundUser ? { email: foundUser.email, role: foundUser.role } : 'None');
+  console.log('Auth Action: Found matching user:', foundUser ? { email: foundUser.email, role: foundUser.role } : 'NONE FOUND');
   
   if (!foundUser) {
-    console.log('Auth Action: Invalid credentials for mock data');
+    console.log('Auth Action: MOCK LOGIN FAILED - Invalid credentials');
     const errorAction = {
       type: 'ERROR_LOGIN',
       payload: { error: { message: 'Invalid email or password' } }
     };
     dispatch(errorAction);
+    console.log('Auth Action: Error action dispatched');
     throw new Error('Invalid credentials');
   }
   
@@ -132,7 +147,8 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
   };
   dispatch(successAction);
   
-  console.log('Auth Action: Mock login successful for:', foundUser.email);
+  console.log('Auth Action: MOCK LOGIN SUCCESSFUL for:', foundUser.email, 'with role:', foundUser.role);
+  console.log('=== AUTH ACTION DEBUG END ===');
   return mockResponse;
 };
 
