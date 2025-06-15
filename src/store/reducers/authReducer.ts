@@ -59,7 +59,7 @@ const authReducer = (state = initialState, action: any): AuthState => {
         email: validatedUser.email,
         name: validatedUser.name,
         role: validatedUser.role,
-        organizationId: validatedUser.organizationId
+        organizationId: validatedUser.organizationId || undefined
       } : user;
       
       const isAuthenticated = !!(token && (validatedUser || user));
@@ -121,7 +121,7 @@ const authReducer = (state = initialState, action: any): AuthState => {
           email: tokenPayload.email,
           name: tokenPayload.name,
           role: tokenPayload.role,
-          organizationId: tokenPayload.organizationId
+          organizationId: tokenPayload.organizationId || undefined
         } : null,
         token: tokenPayload ? storedToken : null,
         isAuthenticated: !!tokenPayload,

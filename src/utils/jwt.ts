@@ -4,6 +4,7 @@ interface JWTPayload {
   email: string;
   role: string;
   name?: string;
+  organizationId?: string;
   exp?: number;
   iat?: number;
   iss?: string;
