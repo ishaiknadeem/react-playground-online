@@ -55,6 +55,8 @@ const AppContent = () => {
     );
   }
 
+  console.log('App initialized, setting up routes...');
+
   return (
     <Router>
       <div className="App">
@@ -113,10 +115,13 @@ const AppContent = () => {
             </RouteErrorBoundary>
           } />
           
-          {/* Public exam route - no authentication required */}
+          {/* Public exam route - no authentication required - MOVED UP FOR PRIORITY */}
           <Route path="/exam" element={
             <RouteErrorBoundary routeName="Exam">
-              <Exam />
+              {(() => {
+                console.log('Exam route matched! Rendering Exam component...');
+                return <Exam />;
+              })()}
             </RouteErrorBoundary>
           } />
           
@@ -203,6 +208,7 @@ const AppContent = () => {
 };
 
 function App() {
+  console.log('App component rendering...');
   return (
     <ErrorBoundary>
       <Provider store={store}>

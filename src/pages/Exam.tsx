@@ -31,8 +31,15 @@ export interface TestCase {
 type ExamState = 'waiting' | 'started' | 'submitted';
 
 const Exam = () => {
+  console.log('Exam component rendering...');
+  console.log('Current URL:', window.location.href);
+  console.log('Current pathname:', window.location.pathname);
+  console.log('Current search:', window.location.search);
+
   const [searchParams] = useSearchParams();
   const questionId = searchParams.get('id');
+  console.log('Question ID from URL params:', questionId);
+
   const [examState, setExamState] = useState<ExamState>('waiting');
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [submissionData, setSubmissionData] = useState<any>(null);
@@ -308,17 +315,20 @@ console.log('Test 2:', twoSum([3,2,4], 6)); // Expected: [1,2]`,
   }, [isAuthenticated]);
 
   if (!questionId) {
+    console.log('No question ID provided in URL');
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-white text-center">
           <h1 className="text-2xl font-bold mb-4">Invalid Exam Link</h1>
           <p>No question ID provided in URL</p>
+          <p className="text-sm text-gray-400 mt-2">Expected format: /exam?id=questionId</p>
         </div>
       </div>
     );
   }
 
   if (isLoading) {
+    console.log('Loading question data...');
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-white text-center">
@@ -330,15 +340,19 @@ console.log('Test 2:', twoSum([3,2,4], 6)); // Expected: [1,2]`,
   }
 
   if (error || !question) {
+    console.error('Error loading question:', error);
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-white text-center">
           <h1 className="text-2xl font-bold mb-4">Error Loading Question</h1>
           <p>Could not load question with ID: {questionId}</p>
+          <p className="text-sm text-gray-400 mt-2">Please check the URL and try again</p>
         </div>
       </div>
     );
   }
+
+  console.log('Rendering exam state:', examState);
 
   if (examState === 'waiting') {
     return <ExamStart question={question} onStart={handleStartExam} />;
