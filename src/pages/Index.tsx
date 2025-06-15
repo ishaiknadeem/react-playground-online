@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Code, Timer, Users, ArrowRight, CheckCircle } from "lucide-react";
@@ -20,7 +21,7 @@ const Index = () => {
             <Link to="/exams" className="text-gray-600 hover:text-blue-600 transition-colors font-medium flex items-center h-9">
               Exams
             </Link>
-            <Link to="/login">
+            <Link to="/candidate-login">
               <Button variant="outline" size="sm" className="h-9">
                 Sign In
               </Button>

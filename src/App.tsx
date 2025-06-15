@@ -11,7 +11,9 @@ import Features from "./pages/Features";
 import Exams from "./pages/Exams";
 import Exam from "./pages/Exam";
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import CandidateLogin from "./pages/CandidateLogin";
+import CandidateSignup from "./pages/CandidateSignup";
 import Practice from "./pages/Practice";
 import PracticeProblem from "./pages/PracticeProblem";
 import InterviewSession from "./pages/InterviewSession";
@@ -44,7 +46,9 @@ const App = () => {
             <Route path="/exams" element={<Exams />} />
             <Route path="/exam" element={<Exam />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
             <Route path="/candidate-login" element={<CandidateLogin />} />
+            <Route path="/candidate-signup" element={<CandidateSignup />} />
             <Route path="/practice" element={<Practice />} />
             <Route path="/practice/problem" element={<PracticeProblem />} />
             <Route path="/practice/interview-session" element={<InterviewSession />} />
