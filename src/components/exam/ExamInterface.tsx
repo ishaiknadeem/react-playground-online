@@ -325,9 +325,9 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
       )}
 
       {/* Action Bar */}
-      <div className={`border-b px-6 py-4 ${theme === 'dark' ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-100'}`}>
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-4">
+      <div className={`border-b px-4 sm:px-6 lg:px-8 py-4 ${theme === 'dark' ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-100'}`}>
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-4 flex-shrink-0">
             <div className="flex items-center gap-3">
               <Badge variant="outline" className="text-xs">
                 {safeQuestion.difficulty}
@@ -340,7 +340,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <Toggle
               pressed={theme === 'dark'}
               onPressedChange={toggleTheme}
