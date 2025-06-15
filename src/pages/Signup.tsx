@@ -10,7 +10,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Shield, User, Lock, Mail, Building, ArrowRight } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { authApi } from '@/services/authApi';
 
 const Signup = () => {
   const [formData, setFormData] = useState({

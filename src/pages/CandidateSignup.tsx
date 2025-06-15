@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Code2, User, Lock, Mail, ArrowRight } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { authApi } from '@/services/authApi';
 
 const CandidateSignup = () => {
   const [formData, setFormData] = useState({
