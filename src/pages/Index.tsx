@@ -418,8 +418,8 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Pricing Preview Section */}
-      <section className="bg-gray-50 py-20">
+      {/* Pricing Preview Section - Hidden */}
+      <section className="bg-gray-50 py-20 hidden">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Simple, Transparent Pricing</h2>
