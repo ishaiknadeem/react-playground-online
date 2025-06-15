@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Camera, Monitor, Lock, AlertTriangle, Eye } from 'lucide-react';
+import { Camera, Monitor, Lock, AlertTriangle, Eye, X, Move } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,7 @@ export interface ProctoringViolation {
   timestamp: Date;
   severity: 'low' | 'medium' | 'high';
   description: string;
-  evidence?: string; // base64 image or other data
+  evidence?: string;
 }
 
 interface ProctoringStatus {
@@ -38,6 +38,12 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     browserLock: 'inactive',
     faceDetection: 'not_detected'
   });
+
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [noFaceCount, setNoFaceCount] = useState(0);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -63,10 +69,11 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
         videoRef.current.srcObject = stream;
         setStatus(prev => ({ ...prev, webcam: 'active' }));
         
-        // Start face detection
-        startFaceDetection();
+        // Start face detection after video loads
+        videoRef.current.onloadedmetadata = () => {
+          startFaceDetection();
+        };
         
-        // Start recording
         startWebcamRecording(stream);
       }
     } catch (error) {
@@ -100,15 +107,13 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       };
       
       recorder.onstop = () => {
-        // Save recording data (in real implementation, upload to server)
         console.log('Screen recording stopped, chunks:', recordedChunks.current.length);
       };
       
-      recorder.start(10000); // Record in 10-second chunks
+      recorder.start(10000);
       screenRecorderRef.current = recorder;
       setStatus(prev => ({ ...prev, screenRecording: 'active' }));
       
-      // Monitor if user stops screen sharing
       screenStream.getVideoTracks()[0].addEventListener('ended', () => {
         setStatus(prev => ({ ...prev, screenRecording: 'error' }));
         onViolation({
@@ -140,12 +145,11 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          // In real implementation, upload chunks to server
           console.log('Webcam chunk recorded:', event.data.size);
         }
       };
       
-      recorder.start(5000); // Record in 5-second chunks
+      recorder.start(5000);
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
     } catch (error) {
@@ -153,7 +157,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     }
   };
 
-  // Simple face detection using canvas
+  // Improved face detection using motion and brightness
   const startFaceDetection = () => {
     faceDetectionInterval.current = setInterval(() => {
       if (videoRef.current && canvasRef.current) {
@@ -161,47 +165,83 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
         const ctx = canvas.getContext('2d');
         const video = videoRef.current;
         
-        if (ctx && video.readyState === 4) {
+        if (ctx && video.readyState === 4 && video.videoWidth > 0) {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
           ctx.drawImage(video, 0, 0);
           
-          // Simple brightness-based face detection (placeholder)
+          // Improved face detection using multiple metrics
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const data = imageData.data;
-          let brightness = 0;
           
-          for (let i = 0; i < data.length; i += 4) {
-            brightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
+          let brightness = 0;
+          let pixelCount = 0;
+          let colorVariance = 0;
+          
+          // Sample center area (likely where face would be)
+          const startX = Math.floor(canvas.width * 0.25);
+          const endX = Math.floor(canvas.width * 0.75);
+          const startY = Math.floor(canvas.height * 0.2);
+          const endY = Math.floor(canvas.height * 0.8);
+          
+          for (let y = startY; y < endY; y += 4) {
+            for (let x = startX; x < endX; x += 4) {
+              const i = (y * canvas.width + x) * 4;
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+              
+              const pixelBrightness = (r + g + b) / 3;
+              brightness += pixelBrightness;
+              
+              // Calculate color variance (skin tone detection)
+              const variance = Math.abs(r - g) + Math.abs(g - b) + Math.abs(r - b);
+              colorVariance += variance;
+              
+              pixelCount++;
+            }
           }
           
-          const avgBrightness = brightness / (data.length / 4);
+          const avgBrightness = brightness / pixelCount;
+          const avgColorVariance = colorVariance / pixelCount;
           
-          // Basic heuristic: if too dark, likely no face
-          if (avgBrightness < 50) {
-            setStatus(prev => ({ ...prev, faceDetection: 'not_detected' }));
-            onViolation({
-              type: 'face_not_detected',
-              timestamp: new Date(),
-              severity: 'medium',
-              description: 'Face not detected in webcam feed'
-            });
-          } else {
+          // More sophisticated detection logic
+          const hasFace = avgBrightness > 30 && 
+                         avgBrightness < 200 && 
+                         avgColorVariance > 15 && 
+                         avgColorVariance < 80;
+          
+          if (hasFace) {
             setStatus(prev => ({ ...prev, faceDetection: 'detected' }));
+            setNoFaceCount(0);
+          } else {
+            setNoFaceCount(prev => prev + 1);
+            
+            // Only trigger violation after multiple consecutive failures
+            if (noFaceCount >= 3) {
+              setStatus(prev => ({ ...prev, faceDetection: 'not_detected' }));
+              
+              // Only send violation every 10 seconds to avoid spam
+              if (noFaceCount % 5 === 0) {
+                onViolation({
+                  type: 'face_not_detected',
+                  timestamp: new Date(),
+                  severity: 'medium',
+                  description: 'Face not detected in webcam feed for extended period'
+                });
+              }
+            }
           }
         }
       }
-    }, 2000); // Check every 2 seconds
+    }, 3000); // Check every 3 seconds instead of 2
   };
 
   // Browser lockdown
   const initializeBrowserLock = useCallback(() => {
-    // Prevent context menu
     const handleContextMenu = (e: MouseEvent) => e.preventDefault();
     
-    // Prevent certain keyboard shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Prevent Alt+Tab, Ctrl+Shift+I, F11, etc.
       if (
         (e.altKey && e.key === 'Tab') ||
         (e.ctrlKey && e.shiftKey && e.key === 'I') ||
@@ -220,7 +260,6 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       }
     };
 
-    // Try to enter fullscreen
     const enterFullscreen = async () => {
       try {
         await document.documentElement.requestFullscreen();
@@ -231,7 +270,6 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       }
     };
 
-    // Monitor fullscreen exit
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
         setStatus(prev => ({ ...prev, browserLock: 'error' }));
@@ -242,7 +280,6 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
           description: 'Exited fullscreen mode during exam'
         });
         
-        // Try to re-enter fullscreen
         setTimeout(enterFullscreen, 1000);
       }
     };
@@ -251,7 +288,6 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     
-    // Enter fullscreen immediately
     enterFullscreen();
 
     return () => {
@@ -260,6 +296,38 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, [onViolation]);
+
+  // Drag functionality
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.drag-handle')) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+    }
+  };
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (isDragging) {
+      setPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  }, [isDragging, dragStart]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   // Initialize all proctoring features
   useEffect(() => {
@@ -276,7 +344,6 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     initialize();
 
     return () => {
-      // Cleanup
       if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
       }
@@ -329,42 +396,79 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50">
-      <Card className="bg-gray-900/95 border-gray-700 text-white backdrop-blur-sm">
+    <div 
+      className="fixed z-50 select-none"
+      style={{
+        top: position.y || 16,
+        right: position.x ? window.innerWidth - position.x - 320 : 16,
+        transform: position.x || position.y ? 'none' : undefined
+      }}
+      onMouseDown={handleMouseDown}
+    >
+      <Card className="bg-gray-900/95 border-gray-700 text-white backdrop-blur-sm cursor-move">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium">Proctoring Active</h3>
-            <Badge className="bg-green-600 text-xs">MONITORING</Badge>
+            <div className="flex items-center gap-2 drag-handle">
+              <Move className="w-4 h-4 text-gray-400" />
+              <h3 className="text-sm font-medium">Proctoring Active</h3>
+              <Badge className="bg-green-600 text-xs">MONITORING</Badge>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMinimized(!isMinimized)}
+                className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+              >
+                {isMinimized ? '□' : '−'}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  // Just hide the UI, don't stop monitoring
+                  const panel = document.querySelector('[data-proctoring-panel]') as HTMLElement;
+                  if (panel) panel.style.display = 'none';
+                }}
+                className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              {getStatusIcon('webcam', status.webcam)}
-              <span>Webcam</span>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {getStatusIcon('screen', status.screenRecording)}
-              <span>Screen</span>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {getStatusIcon('lock', status.browserLock)}
-              <span>Lockdown</span>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {getStatusIcon('face', status.faceDetection)}
-              <span>Face</span>
-            </div>
-          </div>
-          
-          {(status.webcam === 'error' || status.screenRecording === 'error' || status.faceDetection === 'not_detected') && (
-            <div className="mt-3 p-2 bg-red-900/50 rounded border border-red-700">
-              <p className="text-xs text-red-200">
-                Proctoring issues detected. Your exam is being monitored.
-              </p>
-            </div>
+          {!isMinimized && (
+            <>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="flex items-center gap-2">
+                  {getStatusIcon('webcam', status.webcam)}
+                  <span>Webcam</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {getStatusIcon('screen', status.screenRecording)}
+                  <span>Screen</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {getStatusIcon('lock', status.browserLock)}
+                  <span>Lockdown</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {getStatusIcon('face', status.faceDetection)}
+                  <span>Face</span>
+                </div>
+              </div>
+              
+              {(status.webcam === 'error' || status.screenRecording === 'error' || status.faceDetection === 'not_detected') && (
+                <div className="mt-3 p-2 bg-red-900/50 rounded border border-red-700">
+                  <p className="text-xs text-red-200">
+                    Proctoring issues detected. Your exam is being monitored.
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
