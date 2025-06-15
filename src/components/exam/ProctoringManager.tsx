@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Camera, Monitor, Lock, AlertTriangle, Eye, X, Move } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -46,7 +45,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
   });
 
   const [isMinimized, setIsMinimized] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({ x: 16, y: window.innerHeight - 200 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [showLockdownPrompt, setShowLockdownPrompt] = useState(false);
@@ -356,10 +355,9 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (isDragging) {
-      setPosition({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
-      });
+      const newX = Math.max(0, Math.min(window.innerWidth - 320, e.clientX - dragStart.x));
+      const newY = Math.max(0, Math.min(window.innerHeight - 200, e.clientY - dragStart.y));
+      setPosition({ x: newX, y: newY });
     }
   }, [isDragging, dragStart]);
 
@@ -377,6 +375,19 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       };
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  // Update position on window resize to keep panel in bounds
+  useEffect(() => {
+    const handleResize = () => {
+      setPosition(prev => ({
+        x: Math.min(prev.x, window.innerWidth - 320),
+        y: Math.min(prev.y, window.innerHeight - 200)
+      }));
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Initialize all proctoring features
   useEffect(() => {
@@ -470,9 +481,9 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       <div 
         className="fixed z-50 select-none"
         style={{
-          top: position.y || 16,
-          right: position.x ? window.innerWidth - position.x - 320 : 16,
-          transform: position.x || position.y ? 'none' : undefined
+          left: position.x,
+          top: position.y,
+          width: '320px'
         }}
         onMouseDown={handleMouseDown}
         data-proctoring-panel
