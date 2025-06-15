@@ -79,10 +79,10 @@ const PracticeProblem = () => {
     <div className="min-h-screen bg-white">
       {/* Clean Header */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 w-full">
             {/* Left Section */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-shrink-0">
               <Button 
                 onClick={() => navigate('/practice')} 
                 variant="ghost"
@@ -97,18 +97,18 @@ const PracticeProblem = () => {
               <div className="h-5 w-px bg-gray-200 hidden sm:block" />
               
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
                   <Code className="w-4 h-4 text-blue-600" />
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-sm font-medium text-gray-900">{question.title}</h1>
+                  <h1 className="text-sm font-medium text-gray-900 truncate">{question.title}</h1>
                   <p className="text-xs text-gray-500">Practice Mode</p>
                 </div>
               </div>
             </div>
 
             {/* Right Section */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-shrink-0">
               {question.timeEstimate && (
                 <div className="flex items-center gap-1 bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg text-sm">
                   <Clock className="w-3.5 h-3.5" />
