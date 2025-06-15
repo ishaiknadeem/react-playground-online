@@ -44,16 +44,14 @@ const createMockAuthResponse = (email: string, name: string, role: 'admin' | 'ex
   return { token, user };
 };
 
-const getMockCredentials = () => ({
-  candidate: [
-    { email: 'john@example.com', password: 'candidate123', name: 'John Doe', role: 'candidate' as const },
-    { email: 'jane@example.com', password: 'candidate123', name: 'Jane Smith', role: 'candidate' as const }
-  ],
-  admin: [
-    { email: 'admin@company.com', password: 'admin123', name: 'Admin User', role: 'admin' as const },
-    { email: 'hr@company.com', password: 'hr123', name: 'HR Manager', role: 'examiner' as const }
-  ]
-});
+const getAllMockCredentials = () => [
+  // Admin credentials
+  { email: 'admin@company.com', password: 'admin123', name: 'Admin User', role: 'admin' as const },
+  { email: 'hr@company.com', password: 'hr123', name: 'HR Manager', role: 'examiner' as const },
+  // Candidate credentials
+  { email: 'john@example.com', password: 'candidate123', name: 'John Doe', role: 'candidate' as const },
+  { email: 'jane@example.com', password: 'candidate123', name: 'Jane Smith', role: 'candidate' as const }
+];
 
 export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => async (dispatch: any) => {
   console.log('Auth Action: Starting login process for', userType);
@@ -88,9 +86,17 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
     console.error('Auth Action: Login API failed, using fallback:', error);
     
     // Fallback to mock credentials when API fails
-    const mockCredentials = getMockCredentials();
-    const credentials = mockCredentials[userType];
-    const foundUser = credentials.find(u => u.email === data.email && u.password === data.password);
+    const allCredentials = getAllMockCredentials();
+    
+    // For admin userType, allow both admin and examiner roles
+    // For candidate userType, only allow candidate role
+    const allowedRoles = userType === 'admin' ? ['admin', 'examiner'] : ['candidate'];
+    
+    const foundUser = allCredentials.find(u => 
+      u.email === data.email && 
+      u.password === data.password && 
+      allowedRoles.includes(u.role)
+    );
     
     if (!foundUser) {
       const errorAction = {
