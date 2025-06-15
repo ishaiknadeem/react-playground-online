@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/store';
 import { getMyExams, createExam } from '@/store/actions/examActions';
@@ -17,19 +16,26 @@ import { type ExamDetails } from '@/services/api';
 
 const MyExamsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [hasInitialized, setHasInitialized] = useState(false);
   const dispatch = useAppDispatch();
   const { myExams: exams, loading, error } = useAppSelector(state => state.exam);
   const { user } = useAppSelector(state => state.auth);
   const { toast } = useToast();
 
   useEffect(() => {
-    console.log('MyExamsPage useEffect triggered', { userId: user?.id, examsLength: exams?.length });
+    console.log('MyExamsPage useEffect triggered', { 
+      userId: user?.id, 
+      examsLength: exams?.length, 
+      loading, 
+      hasInitialized 
+    });
     
-    if (user?.id && (!exams || exams.length === 0)) {
+    if (user?.id && !hasInitialized && !loading) {
       console.log('Dispatching getMyExams for user:', user.id);
+      setHasInitialized(true);
       dispatch(getMyExams(user.id));
     }
-  }, [dispatch, user?.id]); // Removed exams from dependency to prevent infinite loop
+  }, [dispatch, user?.id, hasInitialized, loading]);
 
   const handleDuplicateExam = async (exam: any) => {
     try {
