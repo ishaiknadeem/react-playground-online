@@ -73,7 +73,26 @@ export function AppSidebar() {
     { icon: Users, label: 'Candidates', href: '/dashboard/candidates' },
   ];
 
-  const navItems = user?.role === 'admin' ? adminNavItems : examinerNavItems;
+  const candidateNavItems = [
+    { icon: BarChart3, label: 'Dashboard', href: '/dashboard' },
+    { icon: FileText, label: 'My Exams', href: '/dashboard/my-exams' },
+    { icon: Settings, label: 'Account Settings', href: '/dashboard/settings' },
+  ];
+
+  const getNavItems = () => {
+    switch (user?.role) {
+      case 'admin':
+        return adminNavItems;
+      case 'examiner':
+        return examinerNavItems;
+      case 'candidate':
+        return candidateNavItems;
+      default:
+        return examinerNavItems;
+    }
+  };
+
+  const navItems = getNavItems();
 
   const getUserInitials = (name: string, email: string) => {
     if (name) {
