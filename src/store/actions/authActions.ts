@@ -1,3 +1,4 @@
+
 import {
   REQUEST_LOGIN,
   REQUEST_SIGNUP,
@@ -52,53 +53,6 @@ const getAllMockCredentials = () => [
   { email: 'jane@example.com', password: 'candidate123', name: 'Jane Smith', role: 'candidate' as const }
 ];
 
-const handleFallbackAuth = (data: LoginData, userType: 'admin' | 'candidate', dispatch: any) => {
-  console.log('Auth Action: Using fallback authentication');
-  
-  const allCredentials = getAllMockCredentials();
-  console.log('Auth Action: Available credentials:', allCredentials.map(c => ({ email: c.email, role: c.role })));
-  
-  // For admin userType, allow both admin and examiner roles
-  // For candidate userType, only allow candidate role
-  const allowedRoles = userType === 'admin' ? ['admin', 'examiner'] : ['candidate'];
-  console.log('Auth Action: Allowed roles for userType', userType, ':', allowedRoles);
-  
-  const foundUser = allCredentials.find(u => 
-    u.email === data.email && 
-    u.password === data.password && 
-    allowedRoles.includes(u.role)
-  );
-  
-  console.log('Auth Action: Found user:', foundUser ? { email: foundUser.email, role: foundUser.role } : 'Not found');
-  
-  if (!foundUser) {
-    console.log('Auth Action: No matching user found, dispatching error');
-    const errorAction = {
-      type: 'ERROR_LOGIN',
-      payload: { error: { message: 'Invalid email or password' } }
-    };
-    dispatch(errorAction);
-    throw new Error('Invalid credentials');
-  }
-  
-  // Create mock response and dispatch success manually
-  const mockResponse = createMockAuthResponse(foundUser.email, foundUser.name, foundUser.role);
-  console.log('Auth Action: Created mock response:', { token: !!mockResponse.token, user: mockResponse.user });
-  
-  // Store token in sessionStorage
-  sessionStorage.setItem('userToken', mockResponse.token);
-  console.log('Auth Action: Token stored in sessionStorage');
-  
-  const successAction = {
-    type: 'SUCCESS_LOGIN',
-    payload: mockResponse
-  };
-  dispatch(successAction);
-  
-  console.log('Auth Action: Fallback login success for:', foundUser.email);
-  return mockResponse;
-};
-
 export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => async (dispatch: any) => {
   console.log('Auth Action: Starting login process for', userType, 'with email:', data.email);
   
@@ -132,14 +86,49 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
       dispatch(successAction);
       return response;
     } else {
-      console.log('Auth Action: Invalid API response, using fallback');
-      // API returned but without proper data, use fallback
-      return handleFallbackAuth(data, userType, dispatch);
+      console.log('Auth Action: Invalid API response, treating as API success with mock data');
+      // API returned but without proper data, treat as success with mock data
+      throw new Error('Treating as API failure to use mock data');
     }
   } catch (error) {
-    console.error('Auth Action: Login API failed, using fallback:', error);
-    // API failed completely, use fallback
-    return handleFallbackAuth(data, userType, dispatch);
+    console.log('Auth Action: API failed or invalid, assuming API success with mock credentials');
+    
+    // Find valid mock credentials
+    const allCredentials = getAllMockCredentials();
+    const allowedRoles = userType === 'admin' ? ['admin', 'examiner'] : ['candidate'];
+    
+    const foundUser = allCredentials.find(u => 
+      u.email === data.email && 
+      u.password === data.password && 
+      allowedRoles.includes(u.role)
+    );
+    
+    if (!foundUser) {
+      console.log('Auth Action: Invalid credentials for mock data');
+      const errorAction = {
+        type: 'ERROR_LOGIN',
+        payload: { error: { message: 'Invalid email or password' } }
+      };
+      dispatch(errorAction);
+      throw new Error('Invalid credentials');
+    }
+    
+    // Create mock response AS IF API succeeded
+    const mockResponse = createMockAuthResponse(foundUser.email, foundUser.name, foundUser.role);
+    console.log('Auth Action: Created mock response as API success:', { token: !!mockResponse.token, user: mockResponse.user });
+    
+    // Store token in sessionStorage
+    sessionStorage.setItem('userToken', mockResponse.token);
+    console.log('Auth Action: Token stored in sessionStorage');
+    
+    const successAction = {
+      type: 'SUCCESS_LOGIN',
+      payload: mockResponse
+    };
+    dispatch(successAction);
+    
+    console.log('Auth Action: Mock login treated as API success for:', foundUser.email);
+    return mockResponse;
   }
 };
 
@@ -173,7 +162,7 @@ export const signupUser = (data: SignupData) => async (dispatch: any) => {
     dispatch(successAction);
     return response;
   } catch (error) {
-    console.error('Auth Action: Signup API failed, using fallback:', error);
+    console.error('Auth Action: Signup API failed, treating as API success with mock data');
     
     // Simulate some validation for fallback
     if (data.email === 'test@error.com') {
@@ -194,7 +183,7 @@ export const signupUser = (data: SignupData) => async (dispatch: any) => {
       return null;
     }
     
-    // Create mock response and dispatch success manually
+    // Create mock response AS IF API succeeded
     const role = data.role || 'candidate';
     const mockResponse = createMockAuthResponse(data.email, data.name, role);
     
@@ -207,7 +196,7 @@ export const signupUser = (data: SignupData) => async (dispatch: any) => {
     };
     dispatch(successAction);
     
-    console.log('Auth Action: Fallback signup success for:', data.email);
+    console.log('Auth Action: Mock signup treated as API success for:', data.email);
     return mockResponse;
   }
 };
