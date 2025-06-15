@@ -42,10 +42,12 @@ const CandidateLogin = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <Code2 className="w-12 h-12 text-blue-600" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">CodePractice</h1>
+          <Link to="/" className="inline-block">
+            <div className="flex items-center justify-center mb-4">
+              <Code2 className="w-12 h-12 text-blue-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">CodePractice</h1>
+          </Link>
           <p className="text-gray-600">Practice coding challenges and improve your skills</p>
         </div>
 
@@ -131,9 +133,9 @@ const CandidateLogin = () => {
               <div className="text-center">
                 <Link 
                   to="/" 
-                  className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                  className="text-sm text-gray-500 hover:text-gray-700 hover:underline"
                 >
-                  Are you an admin or examiner? Click here
+                  ← Back to Home
                 </Link>
               </div>
             </CardFooter>
