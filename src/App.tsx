@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
@@ -22,6 +21,11 @@ import CandidateLogin from './pages/CandidateLogin';
 import CandidateSettings from './pages/CandidateSettings';
 import NotFound from './pages/NotFound';
 import Unauthorized from './pages/Unauthorized';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import CookiePolicy from './pages/CookiePolicy';
+import About from './pages/About';
+import Contact from './pages/Contact';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,6 +58,13 @@ const AppContent = () => {
           <Route path="/register" element={<Signup />} />
           <Route path="/candidate-login" element={<CandidateLogin />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
+          
+          {/* Public information pages */}
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/cookie-policy" element={<CookiePolicy />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
           
           {/* Admin/Examiner protected routes */}
           <Route path="/dashboard" element={
