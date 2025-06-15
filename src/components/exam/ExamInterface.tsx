@@ -35,9 +35,12 @@ interface TabSwitchData {
 }
 
 const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSubmit }) => {
-  // Get proctoring settings from Redux store
+  // Detect if this is practice mode based on current URL
+  const isPracticeMode = window.location.pathname.includes('/practice');
+  
+  // Get proctoring settings from Redux store, but disable for practice mode
   const { settings } = useAppSelector(state => state.settings);
-  const isProctoringEnabled = settings?.proctoring === true;
+  const isProctoringEnabled = !isPracticeMode && settings?.proctoring === true;
 
   // Local theme state - only affects this component
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
@@ -73,8 +76,10 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
     setLocalTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
-  // Handle proctoring violations
+  // Handle proctoring violations - only if not in practice mode
   const handleProctoringViolation = useCallback((violation: ProctoringViolation) => {
+    if (isPracticeMode) return; // Skip violations in practice mode
+    
     console.log('Proctoring violation detected:', violation);
     
     setTabSwitchData(prev => ({
@@ -96,7 +101,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
         variant: "destructive"
       });
     }
-  }, []);
+  }, [isPracticeMode]);
 
   // Check if this is a React exam
   const isReactExam = React.useMemo(() => {
@@ -114,8 +119,10 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
     return indicators.some(Boolean);
   }, [safeQuestion]);
 
-  // Tab switch detection
+  // Tab switch detection - only for exam mode
   useEffect(() => {
+    if (isPracticeMode) return; // Skip tab switch detection in practice mode
+    
     const handleVisibilityChange = () => {
       if (document.hidden && !hasSubmitted) {
         const now = new Date().toISOString();
@@ -149,7 +156,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [hasSubmitted]);
+  }, [hasSubmitted, isPracticeMode]);
 
   // Timer effect
   useEffect(() => {
@@ -349,7 +356,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
 
   return (
     <div className={`h-full ${localTheme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
-      {/* Proctoring Manager */}
+      {/* Proctoring Manager - only for exam mode */}
       {isProctoringEnabled && (
         <ProctoringManager
           isEnabled={true}
@@ -358,8 +365,8 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
         />
       )}
 
-      {/* Tab Switch Warning Overlay */}
-      {showTabWarning && (
+      {/* Tab Switch Warning Overlay - only for exam mode */}
+      {!isPracticeMode && showTabWarning && (
         <div className="fixed inset-0 bg-red-500/10 backdrop-blur-sm flex items-center justify-center z-50">
           <Card className={`border-red-200 shadow-xl max-w-md mx-4 ${localTheme === 'dark' ? 'bg-gray-800 border-red-800' : 'bg-white'}`}>
             <CardContent className="p-6 text-center">
@@ -387,12 +394,13 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
               <Badge variant="outline" className="text-xs">
                 {safeQuestion.difficulty}
               </Badge>
-              {tabSwitchData.totalSwitches > 0 && (
+              {/* Only show violation badges in exam mode */}
+              {!isPracticeMode && tabSwitchData.totalSwitches > 0 && (
                 <Badge variant="destructive" className="text-xs">
                   Switches: {tabSwitchData.totalSwitches}
                 </Badge>
               )}
-              {tabSwitchData.proctoringViolations.length > 0 && (
+              {!isPracticeMode && tabSwitchData.proctoringViolations.length > 0 && (
                 <Badge variant="destructive" className="text-xs">
                   Violations: {tabSwitchData.proctoringViolations.length}
                 </Badge>
