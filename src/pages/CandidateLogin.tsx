@@ -62,7 +62,7 @@ const CandidateLogin = () => {
             <CardContent className="space-y-4">
               {error && (
                 <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>{error.message}</AlertDescription>
                 </Alert>
               )}
               

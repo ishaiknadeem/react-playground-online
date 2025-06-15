@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/store';
@@ -77,7 +78,7 @@ const CandidateSignup = () => {
             <CardContent className="space-y-4">
               {error && (
                 <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>{error.message}</AlertDescription>
                 </Alert>
               )}
               
