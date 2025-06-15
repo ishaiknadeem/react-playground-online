@@ -52,28 +52,6 @@ const CandidateLayout = ({ children }: CandidateLayoutProps) => {
               </div>
             </Link>
 
-            {/* Navigation Links */}
-            <nav className="hidden md:flex items-center space-x-8">
-              <Link 
-                to="/dashboard" 
-                className="text-gray-700 hover:text-blue-600 font-medium"
-              >
-                Dashboard
-              </Link>
-              <Link 
-                to="/dashboard/my-exams" 
-                className="text-gray-700 hover:text-blue-600 font-medium"
-              >
-                My Exams
-              </Link>
-              <Link 
-                to="/practice" 
-                className="text-gray-700 hover:text-blue-600 font-medium"
-              >
-                Practice
-              </Link>
-            </nav>
-
             {/* Right Side - Notifications and User Menu */}
             <div className="flex items-center space-x-4">
               <NotificationPanel />
