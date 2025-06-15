@@ -91,13 +91,19 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
       throw new Error('Invalid email or password');
     }
     
-    // Create mock response and dispatch success
+    // Create mock response and dispatch success manually
     const mockResponse = createMockAuthResponse(foundUser.email, foundUser.name, foundUser.role);
+    
+    // Store token in sessionStorage
+    sessionStorage.setItem('userToken', mockResponse.token);
+    
     const successAction = {
       type: 'SUCCESS_LOGIN',
       payload: mockResponse
     };
     dispatch(successAction);
+    
+    console.log('Auth Action: Fallback login success for:', foundUser.email);
     return mockResponse;
   }
 };
@@ -143,14 +149,20 @@ export const signupUser = (data: SignupData) => async (dispatch: any) => {
       throw new Error('Password must be at least 6 characters long');
     }
     
-    // Create mock response and dispatch success
+    // Create mock response and dispatch success manually
     const role = data.role || 'candidate';
     const mockResponse = createMockAuthResponse(data.email, data.name, role);
+    
+    // Store token in sessionStorage
+    sessionStorage.setItem('userToken', mockResponse.token);
+    
     const successAction = {
       type: 'SUCCESS_SIGNUP',
       payload: mockResponse
     };
     dispatch(successAction);
+    
+    console.log('Auth Action: Fallback signup success for:', data.email);
     return mockResponse;
   }
 };

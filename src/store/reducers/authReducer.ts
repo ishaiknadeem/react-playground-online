@@ -55,15 +55,18 @@ const authReducer = (state = initialState, action: any): AuthState => {
       const { token, user } = action.payload;
       console.log('Auth Reducer: Login/Signup success with token:', !!token, 'and user:', user);
       
+      // Ensure we have both token and user data
+      const finalUser = user || (token ? validateToken(token) : null);
+      
       if (token) {
         sessionStorage.setItem('userToken', token);
       }
       
       return {
         ...state,
-        user: user || validateToken(token),
+        user: finalUser,
         token,
-        isAuthenticated: true,
+        isAuthenticated: !!finalUser,
         loading: false,
         error: null,
       };
@@ -75,6 +78,9 @@ const authReducer = (state = initialState, action: any): AuthState => {
         ...state,
         loading: false,
         error: action.payload.error?.message || 'Authentication failed',
+        isAuthenticated: false,
+        user: null,
+        token: null,
       };
 
     case 'SUCCESS_LOGOUT':
