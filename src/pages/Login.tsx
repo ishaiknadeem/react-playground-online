@@ -22,14 +22,20 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      await dispatch(loginUser({ email, password }, 'admin'));
-      toast({
-        title: "Welcome back!",
-        description: "Successfully logged in to your dashboard",
-      });
-      navigate('/dashboard');
+      const result = await dispatch(loginUser({ email, password }, 'admin'));
+      console.log('Login result:', result);
+      
+      // Check if login was successful (either API or fallback)
+      if (result) {
+        toast({
+          title: "Welcome back!",
+          description: "Successfully logged in to your dashboard",
+        });
+        navigate('/dashboard');
+      }
     } catch (err) {
       console.error('Login error:', err);
+      // Error is already handled by the reducer and displayed in the UI
     }
   };
 

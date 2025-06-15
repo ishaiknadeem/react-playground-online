@@ -104,6 +104,7 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
     dispatch(successAction);
     
     console.log('Auth Action: Fallback login success for:', foundUser.email);
+    // Return the mock response instead of throwing an error
     return mockResponse;
   }
 };
@@ -163,6 +164,7 @@ export const signupUser = (data: SignupData) => async (dispatch: any) => {
     dispatch(successAction);
     
     console.log('Auth Action: Fallback signup success for:', data.email);
+    // Return the mock response instead of throwing an error
     return mockResponse;
   }
 };

@@ -22,14 +22,20 @@ const CandidateLogin = () => {
     e.preventDefault();
 
     try {
-      await dispatch(loginUser({ email, password }, 'candidate'));
-      toast({
-        title: "Welcome!",
-        description: "Successfully logged in to CodePractice",
-      });
-      navigate('/practice');
+      const result = await dispatch(loginUser({ email, password }, 'candidate'));
+      console.log('Candidate login result:', result);
+      
+      // Check if login was successful (either API or fallback)
+      if (result) {
+        toast({
+          title: "Welcome!",
+          description: "Successfully logged in to CodePractice",
+        });
+        navigate('/practice');
+      }
     } catch (err) {
       console.error('Login error:', err);
+      // Error is already handled by the reducer and displayed in the UI
     }
   };
 
