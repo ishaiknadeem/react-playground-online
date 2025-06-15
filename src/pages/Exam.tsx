@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
+import { useAppSelector } from '@/store/store';
 import ExamStart from '@/components/exam/ExamStart';
 import ExamInterface from '@/components/exam/ExamInterface';
 import ExamSubmitted from '@/components/exam/ExamSubmitted';
@@ -36,11 +37,16 @@ const Exam = () => {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [submissionData, setSubmissionData] = useState<any>(null);
 
+  // Get auth state - will be null for guest users
+  const { isAuthenticated, user } = useAppSelector(state => state.auth);
+
   // Mock API call - replace with your actual API
   const { data: question, isLoading, error } = useQuery({
     queryKey: ['question', questionId],
     queryFn: async () => {
       console.log('Fetching question with ID:', questionId);
+      console.log('User authentication status:', isAuthenticated ? 'Authenticated' : 'Guest');
+      
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
@@ -237,6 +243,7 @@ console.log('Test 2:', twoSum([3,2,4], 6)); // Expected: [1,2]`,
     setExamState('started');
     setStartTime(new Date());
     console.log('Exam started at:', new Date().toISOString());
+    console.log('Started by:', isAuthenticated ? `User ${user?.email}` : 'Guest user');
   };
 
   const handleSubmitExam = async (code: any, testResults: any, tabSwitchData: any) => {
@@ -249,7 +256,15 @@ console.log('Test 2:', twoSum([3,2,4], 6)); // Expected: [1,2]`,
       testResults,
       tabSwitchData,
       timeTaken: Math.round(timeTaken * 100) / 100,
-      submittedAt: endTime.toISOString()
+      submittedAt: endTime.toISOString(),
+      submittedBy: isAuthenticated ? {
+        userId: user?.id,
+        email: user?.email,
+        name: user?.name
+      } : {
+        type: 'guest',
+        sessionId: sessionStorage.getItem('guestSessionId') || 'unknown'
+      }
     };
     
     setSubmissionData(submissionData);
@@ -263,7 +278,8 @@ console.log('Test 2:', twoSum([3,2,4], 6)); // Expected: [1,2]`,
           webcamBlobs: tabSwitchData.proctoringData.webcamBlobs || [],
           screenBlobs: tabSwitchData.proctoringData.screenBlobs || [],
           violations: tabSwitchData.proctoringData.violations || [],
-          submittedAt: endTime.toISOString()
+          submittedAt: endTime.toISOString(),
+          submittedBy: submissionData.submittedBy
         });
         console.log('Proctoring data submitted successfully');
       } catch (error) {
@@ -271,8 +287,9 @@ console.log('Test 2:', twoSum([3,2,4], 6)); // Expected: [1,2]`,
       }
     }
     
-    console.log('Exam submitted with proctoring data:', {
+    console.log('Exam submitted:', {
       questionId,
+      userType: isAuthenticated ? 'authenticated' : 'guest',
       code,
       testResults,
       tabSwitchData,
@@ -280,6 +297,15 @@ console.log('Test 2:', twoSum([3,2,4], 6)); // Expected: [1,2]`,
       proctoringDataIncluded: !!tabSwitchData.proctoringData
     });
   };
+
+  // Generate a guest session ID for tracking if user is not authenticated
+  useEffect(() => {
+    if (!isAuthenticated && !sessionStorage.getItem('guestSessionId')) {
+      const guestSessionId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionStorage.setItem('guestSessionId', guestSessionId);
+      console.log('Generated guest session ID:', guestSessionId);
+    }
+  }, [isAuthenticated]);
 
   if (!questionId) {
     return (

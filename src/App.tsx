@@ -113,6 +113,13 @@ const AppContent = () => {
             </RouteErrorBoundary>
           } />
           
+          {/* Public exam route - no authentication required */}
+          <Route path="/exam" element={
+            <RouteErrorBoundary routeName="Exam">
+              <Exam />
+            </RouteErrorBoundary>
+          } />
+          
           {/* Admin/Examiner protected routes */}
           <Route path="/dashboard" element={
             <RouteErrorBoundary routeName="Dashboard">
@@ -160,13 +167,6 @@ const AppContent = () => {
           } />
           
           {/* Authenticated user routes (all roles) */}
-          <Route path="/exam" element={
-            <RouteErrorBoundary routeName="Exam">
-              <ProtectedRoute>
-                <Exam />
-              </ProtectedRoute>
-            </RouteErrorBoundary>
-          } />
           <Route path="/practice" element={
             <RouteErrorBoundary routeName="Practice">
               <ProtectedRoute>
