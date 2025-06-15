@@ -8,6 +8,7 @@ import {
 } from '../actionTypes';
 import callApi from '../../utils/callApi';
 import { baseUrl } from '../../utils/config';
+import { examApi } from '../../services/api';
 
 export const getExams = () => (dispatch: any) => {
   const url = `${baseUrl}/exams?_=${new Date().getTime()}`;
@@ -21,16 +22,25 @@ export const getExams = () => (dispatch: any) => {
   return callApi(params);
 };
 
-export const getMyExams = (examinerId: string) => (dispatch: any) => {
-  const url = `${baseUrl}/exams/examiner/${examinerId}?_=${new Date().getTime()}`;
-  const params = {
-    dispatch,
-    method: 'GET',
-    url,
-    actionType: REQUEST_GET_MY_EXAMS,
-  };
-
-  return callApi(params);
+export const getMyExams = (examinerId: string) => async (dispatch: any) => {
+  dispatch({ type: REQUEST_GET_MY_EXAMS });
+  
+  try {
+    // Try to get exams using the API service which has fallback logic
+    const exams = await examApi.getByExaminer(examinerId);
+    dispatch({
+      type: 'SUCCESS_GET_MY_EXAMS',
+      payload: exams
+    });
+    return exams;
+  } catch (error) {
+    console.error('Error fetching my exams:', error);
+    dispatch({
+      type: 'ERROR_GET_MY_EXAMS',
+      payload: { error: { message: 'Failed to fetch exams' } }
+    });
+    throw error;
+  }
 };
 
 export const createExam = (data: any) => (dispatch: any) => {
