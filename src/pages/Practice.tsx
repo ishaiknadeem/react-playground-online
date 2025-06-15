@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Code2, Clock, Trophy, Search, Play, Star, LogOut, User, Target, Zap, Award, Calendar, Heart, Timer, BookOpen } from 'lucide-react';
-import { useAuthStore } from '@/store/authStore';
+import { useAppSelector, useAppDispatch } from '@/store/store';
+import { logoutUser } from '@/store/actions/authActions';
 import { practiceApi, PracticeQuestion, UserProgress } from '@/services/practiceApi';
 import { useQuery } from '@tanstack/react-query';
 import AchievementBadges, { Achievement } from '@/components/practice/AchievementBadges';
@@ -23,7 +25,8 @@ const Practice = () => {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [sortBy, setSortBy] = useState('popularity');
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { user } = useAppSelector(state => state.auth);
+  const dispatch = useAppDispatch();
 
   // Get tab from URL params
   const activeTab = searchParams.get('tab') || 'problems';
@@ -184,7 +187,7 @@ const Practice = () => {
   };
 
   const handleLogout = () => {
-    logout();
+    dispatch(logoutUser());
     navigate('/candidate-login');
   };
 
