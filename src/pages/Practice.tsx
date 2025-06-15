@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import CandidateLayout from '@/components/dashboard/CandidateLayout';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
