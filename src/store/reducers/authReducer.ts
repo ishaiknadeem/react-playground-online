@@ -1,5 +1,5 @@
 
-import { validateToken } from '../../utils/jwt';
+import { decodeJWT, isTokenExpired } from '../../utils/jwt';
 import { handleApiError, AppError } from '../../utils/errorHandler';
 
 interface AuthState {
@@ -18,6 +18,18 @@ const initialState: AuthState = {
   loading: false,
   error: null,
   initialized: false,
+};
+
+// Helper function to validate token and extract user info
+const validateToken = (token: string) => {
+  if (!token) return null;
+  
+  const payload = decodeJWT(token);
+  if (!payload || isTokenExpired(token)) {
+    return null;
+  }
+  
+  return payload;
 };
 
 const authReducer = (state = initialState, action: any): AuthState => {
@@ -43,7 +55,7 @@ const authReducer = (state = initialState, action: any): AuthState => {
       
       // Use either validated user from token or provided user
       const finalUser = validatedUser ? {
-        id: validatedUser.sub,
+        id: validatedUser.id,
         email: validatedUser.email,
         name: validatedUser.name,
         role: validatedUser.role,
@@ -105,7 +117,7 @@ const authReducer = (state = initialState, action: any): AuthState => {
       return {
         ...state,
         user: tokenPayload ? {
-          id: tokenPayload.sub,
+          id: tokenPayload.id,
           email: tokenPayload.email,
           name: tokenPayload.name,
           role: tokenPayload.role,
