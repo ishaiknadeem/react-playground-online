@@ -42,81 +42,20 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage your organization's coding exams</p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <CreateExamModal trigger={
-            <Button className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Exam
-            </Button>
-          } />
-          <AddExaminerModal trigger={
-            <Button variant="outline" className="w-full sm:w-auto">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Add Examiner
-            </Button>
-          } />
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Examiners</CardTitle>
-            <div className="p-2 rounded-lg bg-blue-100">
-              <Users className="h-4 w-4 text-blue-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.totalExaminers}</div>
-            <p className="text-xs text-muted-foreground">+2 from last month</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Exams</CardTitle>
-            <div className="p-2 rounded-lg bg-green-100">
-              <FileText className="h-4 w-4 text-green-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.totalExams}</div>
-            <p className="text-xs text-muted-foreground">+12 from last month</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Candidates</CardTitle>
-            <div className="p-2 rounded-lg bg-purple-100">
-              <Users className="h-4 w-4 text-purple-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.totalCandidates}</div>
-            <p className="text-xs text-muted-foreground">+45 from last month</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Active Exams</CardTitle>
-            <div className="p-2 rounded-lg bg-emerald-100">
-              <BarChart3 className="h-4 w-4 text-emerald-600" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.activeExams}</div>
-            <p className="text-xs text-muted-foreground">Currently running</p>
-          </CardContent>
-        </Card>
+      {/* Quick Actions Header */}
+      <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto justify-end">
+        <CreateExamModal trigger={
+          <Button className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
+            <Plus className="w-4 h-4 mr-2" />
+            Create Exam
+          </Button>
+        } />
+        <AddExaminerModal trigger={
+          <Button variant="outline" className="w-full sm:w-auto">
+            <UserPlus className="w-4 h-4 mr-2" />
+            Add Examiner
+          </Button>
+        } />
       </div>
 
       {/* Content Grid */}
