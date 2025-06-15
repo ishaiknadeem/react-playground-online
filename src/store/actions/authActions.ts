@@ -1,3 +1,4 @@
+
 import {
   REQUEST_LOGIN,
   REQUEST_SIGNUP,
@@ -57,6 +58,7 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
   console.log('Auth Action: Starting login process for', userType, 'with email:', data.email);
   console.log('Auth Action: Password provided:', !!data.password);
   console.log('Auth Action: Password length:', data.password?.length || 0);
+  console.log('Auth Action: Exact password value:', `"${data.password}"`);
   
   // Start loading
   dispatch({ type: REQUEST_LOGIN });
@@ -102,20 +104,33 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
   
   console.log('Auth Action: User type requested:', userType);
   console.log('Auth Action: Allowed roles for this user type:', allowedRoles);
-  console.log('Auth Action: Available credentials:', allCredentials.map(c => ({ email: c.email, role: c.role })));
-  console.log('Auth Action: Looking for email:', data.email);
-  console.log('Auth Action: Looking for password:', data.password);
+  console.log('Auth Action: Available credentials:', allCredentials);
+  console.log('Auth Action: Looking for email:', `"${data.email}"`);
+  console.log('Auth Action: Looking for password:', `"${data.password}"`);
   
+  // First, let's check if we have the exact email
+  const emailMatches = allCredentials.filter(u => u.email === data.email);
+  console.log('Auth Action: Email matches found:', emailMatches);
+  
+  // Then check password matches
+  const passwordMatches = allCredentials.filter(u => u.password === data.password);
+  console.log('Auth Action: Password matches found:', passwordMatches.map(u => ({ email: u.email, role: u.role })));
+  
+  // Finally, find the complete match
   const foundUser = allCredentials.find(u => {
-    console.log(`Auth Action: Checking credential - Email: ${u.email} === ${data.email}? ${u.email === data.email}`);
-    console.log(`Auth Action: Checking credential - Password: ${u.password} === ${data.password}? ${u.password === data.password}`);
-    console.log(`Auth Action: Checking credential - Role allowed: ${u.role} in [${allowedRoles.join(', ')}]? ${allowedRoles.includes(u.role)}`);
-    
     const emailMatch = u.email === data.email;
     const passwordMatch = u.password === data.password;
     const roleMatch = allowedRoles.includes(u.role);
     
-    console.log(`Auth Action: Final match result: ${emailMatch && passwordMatch && roleMatch}`);
+    console.log(`Auth Action: Checking credential:`, {
+      email: u.email,
+      password: u.password,
+      role: u.role,
+      emailMatch,
+      passwordMatch,
+      roleMatch,
+      finalMatch: emailMatch && passwordMatch && roleMatch
+    });
     
     return emailMatch && passwordMatch && roleMatch;
   });
@@ -124,6 +139,7 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
   
   if (!foundUser) {
     console.log('Auth Action: MOCK LOGIN FAILED - Invalid credentials');
+    console.log('Auth Action: Available admin credentials for reference:', allCredentials.filter(u => u.role === 'admin'));
     const errorAction = {
       type: 'ERROR_LOGIN',
       payload: { error: { message: 'Invalid email or password' } }
