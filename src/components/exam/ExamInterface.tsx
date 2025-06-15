@@ -35,12 +35,15 @@ interface TabSwitchData {
 }
 
 const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSubmit }) => {
-  // Detect if this is practice mode based on current URL
+  // Detect the current mode based on URL path
   const isPracticeMode = window.location.pathname.includes('/practice');
+  const isInterviewMode = window.location.pathname.includes('/interview');
   
-  // Get proctoring settings from Redux store, but disable for practice mode
+  // Get proctoring settings from Redux store
   const { settings } = useAppSelector(state => state.settings);
-  const isProctoringEnabled = !isPracticeMode && settings?.proctoring === true;
+  
+  // Enable proctoring for exam mode and interview mode (but not practice mode)
+  const isProctoringEnabled = !isPracticeMode && (settings?.proctoring === true || isInterviewMode);
 
   // Local theme state - only affects this component
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
@@ -119,7 +122,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
     return indicators.some(Boolean);
   }, [safeQuestion]);
 
-  // Tab switch detection - only for exam mode
+  // Tab switch detection - only for exam mode and interview mode
   useEffect(() => {
     if (isPracticeMode) return; // Skip tab switch detection in practice mode
     
@@ -356,7 +359,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
 
   return (
     <div className={`h-full ${localTheme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
-      {/* Proctoring Manager - only for exam mode */}
+      {/* Proctoring Manager - enabled for exam mode and interview mode */}
       {isProctoringEnabled && (
         <ProctoringManager
           isEnabled={true}
@@ -365,7 +368,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
         />
       )}
 
-      {/* Tab Switch Warning Overlay - only for exam mode */}
+      {/* Tab Switch Warning Overlay - only for exam mode and interview mode */}
       {!isPracticeMode && showTabWarning && (
         <div className="fixed inset-0 bg-red-500/10 backdrop-blur-sm flex items-center justify-center z-50">
           <Card className={`border-red-200 shadow-xl max-w-md mx-4 ${localTheme === 'dark' ? 'bg-gray-800 border-red-800' : 'bg-white'}`}>
@@ -394,7 +397,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
               <Badge variant="outline" className="text-xs">
                 {safeQuestion.difficulty}
               </Badge>
-              {/* Only show violation badges in exam mode */}
+              {/* Only show violation badges in exam mode and interview mode */}
               {!isPracticeMode && tabSwitchData.totalSwitches > 0 && (
                 <Badge variant="destructive" className="text-xs">
                   Switches: {tabSwitchData.totalSwitches}

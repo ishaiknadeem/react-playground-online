@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Camera, Monitor, Lock, AlertTriangle, Eye, X, Move } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -48,7 +49,6 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [noFaceCount, setNoFaceCount] = useState(0);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -59,10 +59,8 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     screenBlobs: [],
     violations: []
   });
-  const faceDetectionInterval = useRef<NodeJS.Timeout | null>(null);
   const screenStream = useRef<MediaStream | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const fullscreenRetryCount = useRef(0);
 
   // Store violation data
   const handleViolationInternal = useCallback((violation: ProctoringViolation) => {
@@ -70,7 +68,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     onViolation(violation);
   }, [onViolation]);
 
-  // Initialize webcam monitoring with better error handling
+  // Initialize webcam monitoring
   const initializeWebcam = useCallback(async () => {
     try {
       console.log('Initializing webcam...');
@@ -88,10 +86,6 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
         setStatus(prev => ({ ...prev, webcam: 'active' }));
         console.log('Webcam initialized successfully');
         
-        videoRef.current.onloadedmetadata = () => {
-          startFaceDetection();
-        };
-        
         startWebcamRecording(stream);
       }
     } catch (error) {
@@ -106,7 +100,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     }
   }, [handleViolationInternal]);
 
-  // Initialize screen recording with better error handling
+  // Initialize screen recording
   const initializeScreenRecording = useCallback(async () => {
     if (screenStream.current) {
       console.log('Screen recording already active, skipping...');
@@ -165,7 +159,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     }
   }, [handleViolationInternal]);
 
-  // Start webcam recording with error handling
+  // Start webcam recording
   const startWebcamRecording = (stream: MediaStream) => {
     try {
       const recorder = new MediaRecorder(stream, {
@@ -187,97 +181,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     }
   };
 
-  // Improved face detection with better algorithm
-  const startFaceDetection = () => {
-    console.log('Starting face detection...');
-    faceDetectionInterval.current = setInterval(() => {
-      if (videoRef.current && canvasRef.current) {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        const video = videoRef.current;
-        
-        if (ctx && video.readyState === 4 && video.videoWidth > 0) {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0);
-          
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const data = imageData.data;
-          
-          let brightness = 0;
-          let pixelCount = 0;
-          let skinTonePixels = 0;
-          let motionPixels = 0;
-          
-          // Focus on center area where face would likely be
-          const startX = Math.floor(canvas.width * 0.25);
-          const endX = Math.floor(canvas.width * 0.75);
-          const startY = Math.floor(canvas.height * 0.15);
-          const endY = Math.floor(canvas.height * 0.85);
-          
-          for (let y = startY; y < endY; y += 2) {
-            for (let x = startX; x < endX; x += 2) {
-              const i = (y * canvas.width + x) * 4;
-              const r = data[i];
-              const g = data[i + 1];
-              const b = data[i + 2];
-              
-              const pixelBrightness = (r + g + b) / 3;
-              brightness += pixelBrightness;
-              
-              // Enhanced skin tone detection
-              if (r > 80 && g > 35 && b > 20 && 
-                  r > g && r > b && 
-                  Math.abs(r - g) > 10 &&
-                  r - b > 15) {
-                skinTonePixels++;
-              }
-              
-              // Motion detection (brightness variance)
-              if (pixelBrightness > 60 && pixelBrightness < 200) {
-                motionPixels++;
-              }
-              
-              pixelCount++;
-            }
-          }
-          
-          const avgBrightness = brightness / pixelCount;
-          const skinRatio = skinTonePixels / pixelCount;
-          const motionRatio = motionPixels / pixelCount;
-          
-          // Improved face detection with multiple criteria
-          const hasFace = avgBrightness > 30 && 
-                         avgBrightness < 240 && 
-                         skinRatio > 0.015 &&
-                         motionRatio > 0.1 &&
-                         pixelCount > 100;
-          
-          if (hasFace) {
-            setStatus(prev => ({ ...prev, faceDetection: 'detected' }));
-            setNoFaceCount(0);
-          } else {
-            setNoFaceCount(prev => prev + 1);
-            
-            if (noFaceCount >= 3) {
-              setStatus(prev => ({ ...prev, faceDetection: 'not_detected' }));
-              
-              if (noFaceCount % 5 === 0) {
-                handleViolationInternal({
-                  type: 'face_not_detected',
-                  timestamp: new Date(),
-                  severity: 'medium',
-                  description: 'Face not detected in webcam feed'
-                });
-              }
-            }
-          }
-        }
-      }
-    }, 2000);
-  };
-
-  // Improved browser lockdown with retry mechanism
+  // Browser lockdown with proper fullscreen handling
   const initializeBrowserLock = useCallback(() => {
     console.log('Initializing browser lockdown...');
     
@@ -288,9 +192,9 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
         (e.altKey && e.key === 'Tab') ||
         (e.ctrlKey && e.shiftKey && e.key === 'I') ||
         (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+        (e.ctrlKey && e.key === 'u') ||
         e.key === 'F11' ||
-        e.key === 'F12' ||
-        (e.ctrlKey && e.key === 'u')
+        e.key === 'F12'
       ) {
         e.preventDefault();
         handleViolationInternal({
@@ -306,26 +210,17 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       try {
         if (!document.fullscreenElement) {
           await document.documentElement.requestFullscreen();
-          setStatus(prev => ({ ...prev, browserLock: 'active' }));
-          fullscreenRetryCount.current = 0;
-          console.log('Fullscreen mode activated');
+          console.log('Entered fullscreen mode');
         }
       } catch (error) {
         console.error('Failed to enter fullscreen:', error);
-        fullscreenRetryCount.current++;
-        
-        if (fullscreenRetryCount.current < 3) {
-          // Retry after a short delay
-          setTimeout(enterFullscreen, 2000);
-        } else {
-          setStatus(prev => ({ ...prev, browserLock: 'error' }));
-          handleViolationInternal({
-            type: 'unauthorized_app',
-            timestamp: new Date(),
-            severity: 'high',
-            description: 'Failed to activate browser lockdown (fullscreen denied)'
-          });
-        }
+        setStatus(prev => ({ ...prev, browserLock: 'error' }));
+        handleViolationInternal({
+          type: 'unauthorized_app',
+          timestamp: new Date(),
+          severity: 'high',
+          description: 'Failed to activate browser lockdown (fullscreen denied)'
+        });
       }
     };
 
@@ -339,7 +234,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
           description: 'Exited fullscreen mode during exam'
         });
         
-        // Retry entering fullscreen
+        // Try to re-enter fullscreen after a delay
         setTimeout(enterFullscreen, 1000);
       } else {
         setStatus(prev => ({ ...prev, browserLock: 'active' }));
@@ -357,6 +252,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       }
     };
 
+    // Add event listeners
     document.addEventListener('contextmenu', handleContextMenu);
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -450,9 +346,6 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       if (screenStream.current) {
         screenStream.current.getTracks().forEach(track => track.stop());
         screenStream.current = null;
-      }
-      if (faceDetectionInterval.current) {
-        clearInterval(faceDetectionInterval.current);
       }
       if (videoRef.current?.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
@@ -562,13 +455,12 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
                 </div>
               </div>
               
-              {(status.webcam === 'error' || status.screenRecording === 'error' || status.faceDetection === 'not_detected' || status.browserLock === 'error') && (
+              {(status.webcam === 'error' || status.screenRecording === 'error' || status.browserLock === 'error') && (
                 <div className="mt-3 p-2 bg-red-900/50 rounded border border-red-700">
                   <p className="text-xs text-red-200">
                     {status.browserLock === 'error' && 'Browser lockdown failed. '}
                     {status.webcam === 'error' && 'Webcam access denied. '}
                     {status.screenRecording === 'error' && 'Screen recording failed. '}
-                    {status.faceDetection === 'not_detected' && 'Face not detected. '}
                     Please ensure permissions are granted.
                   </p>
                 </div>
