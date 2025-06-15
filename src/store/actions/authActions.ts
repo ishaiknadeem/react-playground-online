@@ -55,10 +55,17 @@ const getAllMockCredentials = () => [
 
 export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => async (dispatch: any) => {
   console.log('=== AUTH ACTION DEBUG START ===');
-  console.log('Auth Action: Starting login process for', userType, 'with email:', data.email);
-  console.log('Auth Action: Password provided:', !!data.password);
-  console.log('Auth Action: Password length:', data.password?.length || 0);
-  console.log('Auth Action: Exact password value:', `"${data.password}"`);
+  
+  // Trim email and password to handle whitespace
+  const trimmedData = {
+    email: data.email.trim(),
+    password: data.password.trim()
+  };
+  
+  console.log('Auth Action: Starting login process for', userType, 'with email:', trimmedData.email);
+  console.log('Auth Action: Password provided:', !!trimmedData.password);
+  console.log('Auth Action: Password length:', trimmedData.password?.length || 0);
+  console.log('Auth Action: Exact password value:', `"${trimmedData.password}"`);
   
   // Start loading
   dispatch({ type: REQUEST_LOGIN });
@@ -75,7 +82,7 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
       url: apiUrl,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, userType })
+      body: JSON.stringify({ ...trimmedData, userType })
     });
     
     console.log('Auth Action: API login successful:', result);
@@ -105,21 +112,21 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
   console.log('Auth Action: User type requested:', userType);
   console.log('Auth Action: Allowed roles for this user type:', allowedRoles);
   console.log('Auth Action: Available credentials:', allCredentials);
-  console.log('Auth Action: Looking for email:', `"${data.email}"`);
-  console.log('Auth Action: Looking for password:', `"${data.password}"`);
+  console.log('Auth Action: Looking for email:', `"${trimmedData.email}"`);
+  console.log('Auth Action: Looking for password:', `"${trimmedData.password}"`);
   
   // First, let's check if we have the exact email
-  const emailMatches = allCredentials.filter(u => u.email === data.email);
+  const emailMatches = allCredentials.filter(u => u.email === trimmedData.email);
   console.log('Auth Action: Email matches found:', emailMatches);
   
   // Then check password matches
-  const passwordMatches = allCredentials.filter(u => u.password === data.password);
+  const passwordMatches = allCredentials.filter(u => u.password === trimmedData.password);
   console.log('Auth Action: Password matches found:', passwordMatches.map(u => ({ email: u.email, role: u.role })));
   
   // Finally, find the complete match
   const foundUser = allCredentials.find(u => {
-    const emailMatch = u.email === data.email;
-    const passwordMatch = u.password === data.password;
+    const emailMatch = u.email === trimmedData.email;
+    const passwordMatch = u.password === trimmedData.password;
     const roleMatch = allowedRoles.includes(u.role);
     
     console.log(`Auth Action: Checking credential:`, {
