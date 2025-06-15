@@ -20,21 +20,26 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Login: Form submitted with email:', email);
 
     try {
+      console.log('Login: Dispatching loginUser action');
       const result = await dispatch(loginUser({ email, password }, 'admin'));
-      console.log('Login result:', result);
+      console.log('Login: Login result:', result);
       
       // Check if login was successful (either API or fallback)
       if (result) {
+        console.log('Login: Success, showing toast and navigating');
         toast({
           title: "Welcome back!",
           description: "Successfully logged in to your dashboard",
         });
         navigate('/dashboard');
+      } else {
+        console.log('Login: No result returned from loginUser');
       }
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('Login: Login error caught:', err);
       // Error is already handled by the reducer and displayed in the UI
     }
   };

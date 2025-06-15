@@ -54,7 +54,7 @@ const getAllMockCredentials = () => [
 ];
 
 export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => async (dispatch: any) => {
-  console.log('Auth Action: Starting login process for', userType);
+  console.log('Auth Action: Starting login process for', userType, 'with email:', data.email);
   
   // Start loading
   dispatch({ type: REQUEST_LOGIN });
@@ -72,6 +72,7 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
   };
 
   try {
+    console.log('Auth Action: Attempting API call to:', url);
     const response = await callApi(params);
     console.log('Auth Action: Login API success:', response);
     
@@ -87,10 +88,12 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
     
     // Fallback to mock credentials when API fails
     const allCredentials = getAllMockCredentials();
+    console.log('Auth Action: Available credentials:', allCredentials.map(c => ({ email: c.email, role: c.role })));
     
     // For admin userType, allow both admin and examiner roles
     // For candidate userType, only allow candidate role
     const allowedRoles = userType === 'admin' ? ['admin', 'examiner'] : ['candidate'];
+    console.log('Auth Action: Allowed roles for userType', userType, ':', allowedRoles);
     
     const foundUser = allCredentials.find(u => 
       u.email === data.email && 
@@ -98,20 +101,25 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
       allowedRoles.includes(u.role)
     );
     
+    console.log('Auth Action: Found user:', foundUser ? { email: foundUser.email, role: foundUser.role } : 'Not found');
+    
     if (!foundUser) {
+      console.log('Auth Action: No matching user found, dispatching error');
       const errorAction = {
         type: 'ERROR_LOGIN',
         payload: { error: { message: 'Invalid email or password' } }
       };
       dispatch(errorAction);
-      return null;
+      throw new Error('Invalid credentials'); // Throw error so the component knows login failed
     }
     
     // Create mock response and dispatch success manually
     const mockResponse = createMockAuthResponse(foundUser.email, foundUser.name, foundUser.role);
+    console.log('Auth Action: Created mock response:', { token: !!mockResponse.token, user: mockResponse.user });
     
     // Store token in sessionStorage
     sessionStorage.setItem('userToken', mockResponse.token);
+    console.log('Auth Action: Token stored in sessionStorage');
     
     const successAction = {
       type: 'SUCCESS_LOGIN',
