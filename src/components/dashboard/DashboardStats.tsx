@@ -1,13 +1,12 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, FileText, CheckCircle, Clock } from 'lucide-react';
 import { examinerApi, examApi, candidateApi } from '@/services/api';
-import { useAuthStore } from '@/store/authStore';
+import { useAppSelector } from '@/store/store';
 
 const DashboardStats = () => {
-  const { user } = useAuthStore();
+  const { user } = useAppSelector(state => state.auth);
 
   const { data: examiners } = useQuery({
     queryKey: ['examiners'],

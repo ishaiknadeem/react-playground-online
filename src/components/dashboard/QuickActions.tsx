@@ -1,15 +1,14 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, UserPlus, FileText, Settings, Users } from 'lucide-react';
-import { useAuthStore } from '@/store/authStore';
+import { useAppSelector } from '@/store/store';
 import { useNavigate } from 'react-router-dom';
 import AddExaminerModal from './AddExaminerModal';
 import CreateExamModal from './CreateExamModal';
 
 const QuickActions = () => {
-  const { user } = useAuthStore();
+  const { user } = useAppSelector(state => state.auth);
   const navigate = useNavigate();
 
   const adminActions = [

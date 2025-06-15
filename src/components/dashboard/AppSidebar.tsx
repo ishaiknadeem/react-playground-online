@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Code, BarChart3, Users, FileText, Settings, User, LogOut } from 'lucide-react';
@@ -17,17 +16,19 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/store/authStore';
+import { useAppSelector, useAppDispatch } from '@/store/store';
+import { logoutUser } from '@/store/actions/authActions';
 import { useNavigate } from 'react-router-dom';
 
 export function AppSidebar() {
-  const { user, logout } = useAuthStore();
+  const { user } = useAppSelector(state => state.auth);
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const { state, setOpenMobile } = useSidebar();
 
   const handleLogout = () => {
-    logout();
+    dispatch(logoutUser());
     navigate('/');
   };
 

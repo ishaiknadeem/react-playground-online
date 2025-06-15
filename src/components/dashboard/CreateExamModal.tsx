@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -10,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus } from 'lucide-react';
 import { examApi } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
-import { useAuthStore } from '@/store/authStore';
+import { useAppSelector } from '@/store/store';
 
 interface CreateExamModalProps {
   trigger?: React.ReactNode;
@@ -26,7 +25,7 @@ const CreateExamModal = ({ trigger }: CreateExamModalProps) => {
   });
 
   const { toast } = useToast();
-  const { user } = useAuthStore();
+  const { user } = useAppSelector(state => state.auth);
   const queryClient = useQueryClient();
 
   const createExamMutation = useMutation({

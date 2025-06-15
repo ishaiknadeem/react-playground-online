@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { FileText, User, CheckCircle, Clock } from 'lucide-react';
 import { candidateApi, examApi } from '@/services/api';
-import { useAuthStore } from '@/store/authStore';
+import { useAppSelector } from '@/store/store';
 
 interface Activity {
   id: string;
@@ -19,7 +18,7 @@ interface Activity {
 }
 
 const RecentActivity = () => {
-  const { user } = useAuthStore();
+  const { user } = useAppSelector(state => state.auth);
 
   const { data: candidates } = useQuery({
     queryKey: ['candidates'],

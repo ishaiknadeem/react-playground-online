@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
-import { useAuthStore } from '@/store/authStore';
+import { useAppSelector } from '@/store/store';
 import NotificationPanel from './NotificationPanel';
 
 interface DashboardLayoutProps {
@@ -10,7 +9,7 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const { user } = useAuthStore();
+  const { user } = useAppSelector(state => state.auth);
 
   return (
     <SidebarProvider defaultOpen={false}>
