@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Code2, Play, Users, Clock, CheckCircle, ArrowRight, Sparkles } from "lucide-react";
@@ -146,12 +145,12 @@ const Index = () => {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-3">Multiple Languages</h3>
                 <p className="text-gray-600 mb-4">
-                  Support for JavaScript, React, Python, and more with real-time execution.
+                  Support for JavaScript, React, TypeScript, and more with real-time execution.
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">JavaScript</span>
                   <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">React</span>
-                  <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">Python</span>
+                  <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">TypeScript</span>
                 </div>
               </CardContent>
             </Card>
@@ -211,9 +210,9 @@ const Index = () => {
                 <Button 
                   variant="outline"
                   size="lg"
-                  className="border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3"
+                  className="border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3"
                 >
-                  Sign Up Now
+                  <span className="font-medium">Sign Up Now</span>
                 </Button>
               </Link>
             </div>
