@@ -1,4 +1,3 @@
-
 import {
   REQUEST_LOGIN,
   REQUEST_SIGNUP,
@@ -53,6 +52,53 @@ const getAllMockCredentials = () => [
   { email: 'jane@example.com', password: 'candidate123', name: 'Jane Smith', role: 'candidate' as const }
 ];
 
+const handleFallbackAuth = (data: LoginData, userType: 'admin' | 'candidate', dispatch: any) => {
+  console.log('Auth Action: Using fallback authentication');
+  
+  const allCredentials = getAllMockCredentials();
+  console.log('Auth Action: Available credentials:', allCredentials.map(c => ({ email: c.email, role: c.role })));
+  
+  // For admin userType, allow both admin and examiner roles
+  // For candidate userType, only allow candidate role
+  const allowedRoles = userType === 'admin' ? ['admin', 'examiner'] : ['candidate'];
+  console.log('Auth Action: Allowed roles for userType', userType, ':', allowedRoles);
+  
+  const foundUser = allCredentials.find(u => 
+    u.email === data.email && 
+    u.password === data.password && 
+    allowedRoles.includes(u.role)
+  );
+  
+  console.log('Auth Action: Found user:', foundUser ? { email: foundUser.email, role: foundUser.role } : 'Not found');
+  
+  if (!foundUser) {
+    console.log('Auth Action: No matching user found, dispatching error');
+    const errorAction = {
+      type: 'ERROR_LOGIN',
+      payload: { error: { message: 'Invalid email or password' } }
+    };
+    dispatch(errorAction);
+    throw new Error('Invalid credentials');
+  }
+  
+  // Create mock response and dispatch success manually
+  const mockResponse = createMockAuthResponse(foundUser.email, foundUser.name, foundUser.role);
+  console.log('Auth Action: Created mock response:', { token: !!mockResponse.token, user: mockResponse.user });
+  
+  // Store token in sessionStorage
+  sessionStorage.setItem('userToken', mockResponse.token);
+  console.log('Auth Action: Token stored in sessionStorage');
+  
+  const successAction = {
+    type: 'SUCCESS_LOGIN',
+    payload: mockResponse
+  };
+  dispatch(successAction);
+  
+  console.log('Auth Action: Fallback login success for:', foundUser.email);
+  return mockResponse;
+};
+
 export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => async (dispatch: any) => {
   console.log('Auth Action: Starting login process for', userType, 'with email:', data.email);
   
@@ -74,61 +120,26 @@ export const loginUser = (data: LoginData, userType: 'admin' | 'candidate') => a
   try {
     console.log('Auth Action: Attempting API call to:', url);
     const response = await callApi(params);
-    console.log('Auth Action: Login API success:', response);
+    console.log('Auth Action: Login API response:', response);
     
-    // Dispatch success manually
-    const successAction = {
-      type: 'SUCCESS_LOGIN',
-      payload: response
-    };
-    dispatch(successAction);
-    return response;
+    // Check if we have a proper response with token and user
+    if (response && response.token && response.user) {
+      console.log('Auth Action: Valid API response, dispatching success');
+      const successAction = {
+        type: 'SUCCESS_LOGIN',
+        payload: response
+      };
+      dispatch(successAction);
+      return response;
+    } else {
+      console.log('Auth Action: Invalid API response, using fallback');
+      // API returned but without proper data, use fallback
+      return handleFallbackAuth(data, userType, dispatch);
+    }
   } catch (error) {
     console.error('Auth Action: Login API failed, using fallback:', error);
-    
-    // Fallback to mock credentials when API fails
-    const allCredentials = getAllMockCredentials();
-    console.log('Auth Action: Available credentials:', allCredentials.map(c => ({ email: c.email, role: c.role })));
-    
-    // For admin userType, allow both admin and examiner roles
-    // For candidate userType, only allow candidate role
-    const allowedRoles = userType === 'admin' ? ['admin', 'examiner'] : ['candidate'];
-    console.log('Auth Action: Allowed roles for userType', userType, ':', allowedRoles);
-    
-    const foundUser = allCredentials.find(u => 
-      u.email === data.email && 
-      u.password === data.password && 
-      allowedRoles.includes(u.role)
-    );
-    
-    console.log('Auth Action: Found user:', foundUser ? { email: foundUser.email, role: foundUser.role } : 'Not found');
-    
-    if (!foundUser) {
-      console.log('Auth Action: No matching user found, dispatching error');
-      const errorAction = {
-        type: 'ERROR_LOGIN',
-        payload: { error: { message: 'Invalid email or password' } }
-      };
-      dispatch(errorAction);
-      throw new Error('Invalid credentials'); // Throw error so the component knows login failed
-    }
-    
-    // Create mock response and dispatch success manually
-    const mockResponse = createMockAuthResponse(foundUser.email, foundUser.name, foundUser.role);
-    console.log('Auth Action: Created mock response:', { token: !!mockResponse.token, user: mockResponse.user });
-    
-    // Store token in sessionStorage
-    sessionStorage.setItem('userToken', mockResponse.token);
-    console.log('Auth Action: Token stored in sessionStorage');
-    
-    const successAction = {
-      type: 'SUCCESS_LOGIN',
-      payload: mockResponse
-    };
-    dispatch(successAction);
-    
-    console.log('Auth Action: Fallback login success for:', foundUser.email);
-    return mockResponse;
+    // API failed completely, use fallback
+    return handleFallbackAuth(data, userType, dispatch);
   }
 };
 
