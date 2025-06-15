@@ -63,6 +63,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
   const faceDetectionInterval = useRef<NodeJS.Timeout | null>(null);
   const screenStream = useRef<MediaStream | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const fullscreenRetryCount = useRef(0);
 
   // Store violation data
   const handleViolationInternal = useCallback((violation: ProctoringViolation) => {
@@ -70,9 +71,10 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     onViolation(violation);
   }, [onViolation]);
 
-  // Initialize webcam monitoring
+  // Initialize webcam monitoring with better error handling
   const initializeWebcam = useCallback(async () => {
     try {
+      console.log('Initializing webcam...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           width: { ideal: 640 },
@@ -85,6 +87,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setStatus(prev => ({ ...prev, webcam: 'active' }));
+        console.log('Webcam initialized successfully');
         
         videoRef.current.onloadedmetadata = () => {
           startFaceDetection();
@@ -104,7 +107,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     }
   }, [handleViolationInternal]);
 
-  // Initialize screen recording (fixed double permission issue)
+  // Initialize screen recording with better error handling
   const initializeScreenRecording = useCallback(async () => {
     if (screenStream.current) {
       console.log('Screen recording already active, skipping...');
@@ -112,12 +115,14 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     }
 
     try {
+      console.log('Requesting screen share...');
       const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
+        video: { mediaSource: 'screen' },
         audio: true
       });
       
       screenStream.current = stream;
+      console.log('Screen recording initialized successfully');
       
       const recorder = new MediaRecorder(stream, {
         mimeType: 'video/webm;codecs=vp9'
@@ -156,12 +161,12 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
         type: 'screen_share_stopped',
         timestamp: new Date(),
         severity: 'medium',
-        description: 'Failed to start screen recording'
+        description: 'Screen recording permission denied or failed'
       });
     }
   }, [handleViolationInternal]);
 
-  // Start webcam recording (optimized)
+  // Start webcam recording with error handling
   const startWebcamRecording = (stream: MediaStream) => {
     try {
       const recorder = new MediaRecorder(stream, {
@@ -177,13 +182,15 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
       recorder.start(30000); // Record in 30-second chunks
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
+      console.log('Webcam recording started');
     } catch (error) {
       console.error('Failed to start webcam recording:', error);
     }
   };
 
-  // Enhanced face detection
+  // Improved face detection with better algorithm
   const startFaceDetection = () => {
+    console.log('Starting face detection...');
     faceDetectionInterval.current = setInterval(() => {
       if (videoRef.current && canvasRef.current) {
         const canvas = canvasRef.current;
@@ -201,15 +208,16 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
           let brightness = 0;
           let pixelCount = 0;
           let skinTonePixels = 0;
+          let motionPixels = 0;
           
           // Focus on center area where face would likely be
-          const startX = Math.floor(canvas.width * 0.3);
-          const endX = Math.floor(canvas.width * 0.7);
-          const startY = Math.floor(canvas.height * 0.2);
-          const endY = Math.floor(canvas.height * 0.8);
+          const startX = Math.floor(canvas.width * 0.25);
+          const endX = Math.floor(canvas.width * 0.75);
+          const startY = Math.floor(canvas.height * 0.15);
+          const endY = Math.floor(canvas.height * 0.85);
           
-          for (let y = startY; y < endY; y += 3) {
-            for (let x = startX; x < endX; x += 3) {
+          for (let y = startY; y < endY; y += 2) {
+            for (let x = startX; x < endX; x += 2) {
               const i = (y * canvas.width + x) * 4;
               const r = data[i];
               const g = data[i + 1];
@@ -218,11 +226,17 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
               const pixelBrightness = (r + g + b) / 3;
               brightness += pixelBrightness;
               
-              // Improved skin tone detection
-              if (r > 95 && g > 40 && b > 20 && 
+              // Enhanced skin tone detection
+              if (r > 80 && g > 35 && b > 20 && 
                   r > g && r > b && 
-                  Math.abs(r - g) > 15) {
+                  Math.abs(r - g) > 10 &&
+                  r - b > 15) {
                 skinTonePixels++;
+              }
+              
+              // Motion detection (brightness variance)
+              if (pixelBrightness > 60 && pixelBrightness < 200) {
+                motionPixels++;
               }
               
               pixelCount++;
@@ -231,11 +245,13 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
           
           const avgBrightness = brightness / pixelCount;
           const skinRatio = skinTonePixels / pixelCount;
+          const motionRatio = motionPixels / pixelCount;
           
-          // More reliable face detection
-          const hasFace = avgBrightness > 40 && 
-                         avgBrightness < 220 && 
-                         skinRatio > 0.02 &&
+          // Improved face detection with multiple criteria
+          const hasFace = avgBrightness > 30 && 
+                         avgBrightness < 240 && 
+                         skinRatio > 0.015 &&
+                         motionRatio > 0.1 &&
                          pixelCount > 100;
           
           if (hasFace) {
@@ -244,10 +260,10 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
           } else {
             setNoFaceCount(prev => prev + 1);
             
-            if (noFaceCount >= 2) {
+            if (noFaceCount >= 3) {
               setStatus(prev => ({ ...prev, faceDetection: 'not_detected' }));
               
-              if (noFaceCount % 4 === 0) {
+              if (noFaceCount % 5 === 0) {
                 handleViolationInternal({
                   type: 'face_not_detected',
                   timestamp: new Date(),
@@ -262,8 +278,10 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     }, 2000);
   };
 
-  // Browser lockdown
+  // Improved browser lockdown with retry mechanism
   const initializeBrowserLock = useCallback(() => {
+    console.log('Initializing browser lockdown...');
+    
     const handleContextMenu = (e: MouseEvent) => e.preventDefault();
     
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -287,11 +305,28 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
 
     const enterFullscreen = async () => {
       try {
-        await document.documentElement.requestFullscreen();
-        setStatus(prev => ({ ...prev, browserLock: 'active' }));
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+          setStatus(prev => ({ ...prev, browserLock: 'active' }));
+          fullscreenRetryCount.current = 0;
+          console.log('Fullscreen mode activated');
+        }
       } catch (error) {
         console.error('Failed to enter fullscreen:', error);
-        setStatus(prev => ({ ...prev, browserLock: 'error' }));
+        fullscreenRetryCount.current++;
+        
+        if (fullscreenRetryCount.current < 3) {
+          // Retry after a short delay
+          setTimeout(enterFullscreen, 2000);
+        } else {
+          setStatus(prev => ({ ...prev, browserLock: 'error' }));
+          handleViolationInternal({
+            type: 'unauthorized_app',
+            timestamp: new Date(),
+            severity: 'high',
+            description: 'Failed to activate browser lockdown (fullscreen denied)'
+          });
+        }
       }
     };
 
@@ -305,20 +340,37 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
           description: 'Exited fullscreen mode during exam'
         });
         
+        // Retry entering fullscreen
         setTimeout(enterFullscreen, 1000);
+      } else {
+        setStatus(prev => ({ ...prev, browserLock: 'active' }));
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        handleViolationInternal({
+          type: 'unauthorized_app',
+          timestamp: new Date(),
+          severity: 'medium',
+          description: 'Tab switched or window minimized during exam'
+        });
       }
     };
 
     document.addEventListener('contextmenu', handleContextMenu);
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
+    // Initial fullscreen request
     enterFullscreen();
 
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [handleViolationInternal]);
 
@@ -380,6 +432,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     let cleanupBrowserLock: (() => void) | undefined;
 
     const initialize = async () => {
+      console.log('Initializing proctoring features...');
       await initializeWebcam();
       await initializeScreenRecording();
       cleanupBrowserLock = initializeBrowserLock();
@@ -388,6 +441,7 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     initialize();
 
     return () => {
+      console.log('Cleaning up proctoring features...');
       if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
       }
@@ -417,12 +471,12 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
     switch (statusValue) {
       case 'active':
       case 'detected':
-        return 'text-green-500';
+        return 'text-green-400';
       case 'error':
       case 'not_detected':
-        return 'text-red-500';
+        return 'text-red-400';
       default:
-        return 'text-yellow-500';
+        return 'text-yellow-400';
     }
   };
 
@@ -509,10 +563,14 @@ const ProctoringManager: React.FC<ProctoringManagerProps> = ({
                 </div>
               </div>
               
-              {(status.webcam === 'error' || status.screenRecording === 'error' || status.faceDetection === 'not_detected') && (
+              {(status.webcam === 'error' || status.screenRecording === 'error' || status.faceDetection === 'not_detected' || status.browserLock === 'error') && (
                 <div className="mt-3 p-2 bg-red-900/50 rounded border border-red-700">
                   <p className="text-xs text-red-200">
-                    Proctoring issues detected. Your exam is being monitored.
+                    {status.browserLock === 'error' && 'Browser lockdown failed. '}
+                    {status.webcam === 'error' && 'Webcam access denied. '}
+                    {status.screenRecording === 'error' && 'Screen recording failed. '}
+                    {status.faceDetection === 'not_detected' && 'Face not detected. '}
+                    Please ensure permissions are granted.
                   </p>
                 </div>
               )}
