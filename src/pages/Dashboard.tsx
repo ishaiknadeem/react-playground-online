@@ -6,11 +6,11 @@ import ExaminerDashboard from '@/components/dashboard/ExaminerDashboard';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import QuickActions from '@/components/dashboard/QuickActions';
-import { useAuthStore } from '@/store/authStore';
+import { useAppSelector } from '@/store/store';
 import { Navigate } from 'react-router-dom';
 
 const Dashboard = () => {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated } = useAppSelector(state => state.auth);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

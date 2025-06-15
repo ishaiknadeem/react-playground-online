@@ -5,7 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
-import { useAuthStore } from "@/store/authStore";
+import { useAppDispatch } from "@/store/store";
+import { checkAuth } from "@/store/actions/authActions";
 import Index from "./pages/Index";
 import Features from "./pages/Features";
 import Exams from "./pages/Exams";
@@ -28,11 +29,11 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const checkAuth = useAuthStore((state) => state.checkAuth);
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    dispatch(checkAuth());
+  }, [dispatch]);
 
   return (
     <QueryClientProvider client={queryClient}>

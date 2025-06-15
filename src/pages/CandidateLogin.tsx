@@ -7,38 +7,29 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Code2, User, Lock, ArrowRight } from 'lucide-react';
-import { useAuthStore } from '@/store/authStore';
+import { useAppDispatch, useAppSelector } from '@/store/store';
+import { loginUser } from '@/store/actions/authActions';
 import { toast } from '@/hooks/use-toast';
 
 const CandidateLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const dispatch = useAppDispatch();
+  const { loading, error } = useAppSelector(state => state.auth);
   const navigate = useNavigate();
-  const login = useAuthStore((state) => state.login);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
 
     try {
-      const result = await login(email, password, 'candidate');
-      
-      if (result.success) {
-        toast({
-          title: "Welcome!",
-          description: "Successfully logged in to CodePractice",
-        });
-        navigate('/practice');
-      } else {
-        setError(result.error || 'Login failed');
-      }
+      await dispatch(loginUser({ email, password }, 'candidate'));
+      toast({
+        title: "Welcome!",
+        description: "Successfully logged in to CodePractice",
+      });
+      navigate('/practice');
     } catch (err) {
-      setError('An unexpected error occurred');
-    } finally {
-      setIsLoading(false);
+      console.error('Login error:', err);
     }
   };
 
@@ -106,9 +97,9 @@ const CandidateLogin = () => {
               <Button 
                 type="submit" 
                 className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={isLoading}
+                disabled={loading}
               >
-                {isLoading ? (
+                {loading ? (
                   "Signing in..."
                 ) : (
                   <>
