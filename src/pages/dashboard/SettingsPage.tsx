@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '@/store/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,10 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Save, Shield, Bell, Users, Code, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import CandidateLayout from '@/components/dashboard/CandidateLayout';
 
 const SettingsPage = () => {
   const { user } = useAppSelector(state => state.auth);
   const { toast } = useToast();
+  
   const [settings, setSettings] = useState({
     // Organization settings (admin/examiner only)
     organizationName: '',
@@ -98,9 +99,10 @@ const SettingsPage = () => {
   };
 
   const isCandidate = user?.role === 'candidate';
+  const Layout = isCandidate ? CandidateLayout : DashboardLayout;
 
   return (
-    <DashboardLayout>
+    <Layout>
       <div className="space-y-6 max-w-4xl">
         {/* Header */}
         <div>
@@ -357,7 +359,7 @@ const SettingsPage = () => {
           </Button>
         </div>
       </div>
-    </DashboardLayout>
+    </Layout>
   );
 };
 

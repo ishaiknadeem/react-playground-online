@@ -1,6 +1,7 @@
 
 import React from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import CandidateLayout from '@/components/dashboard/CandidateLayout';
 import AdminDashboard from '@/components/dashboard/AdminDashboard';
 import ExaminerDashboard from '@/components/dashboard/ExaminerDashboard';
 import DashboardStats from '@/components/dashboard/DashboardStats';
@@ -16,8 +17,11 @@ const Dashboard = () => {
     return <Navigate to="/login" replace />;
   }
 
+  const isCandidate = user?.role === 'candidate';
+  const Layout = isCandidate ? CandidateLayout : DashboardLayout;
+
   return (
-    <DashboardLayout>
+    <Layout>
       <div className="space-y-6">
         {/* Dashboard Stats */}
         <DashboardStats />
@@ -35,7 +39,7 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </Layout>
   );
 };
 
