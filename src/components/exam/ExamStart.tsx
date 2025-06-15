@@ -14,10 +14,10 @@ interface ExamStartProps {
 const ExamStart: React.FC<ExamStartProps> = ({ question, onStart }) => {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'Easy': return 'bg-green-500';
-      case 'Medium': return 'bg-yellow-500';
-      case 'Hard': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case 'Easy': return 'bg-green-500 text-white';
+      case 'Medium': return 'bg-yellow-500 text-white';
+      case 'Hard': return 'bg-red-500 text-white';
+      default: return 'bg-gray-500 text-white';
     }
   };
 
@@ -26,7 +26,7 @@ const ExamStart: React.FC<ExamStartProps> = ({ question, onStart }) => {
       <Card className="w-full max-w-2xl bg-gray-800/50 border-gray-700 text-white">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center space-x-4 mb-4">
-            <Badge className={`${getDifficultyColor(question.difficulty)} text-white px-3 py-1`}>
+            <Badge className={`${getDifficultyColor(question.difficulty)} px-3 py-1 border-0`}>
               {question.difficulty}
             </Badge>
             <div className="flex items-center space-x-2 text-gray-300">
@@ -78,7 +78,7 @@ const ExamStart: React.FC<ExamStartProps> = ({ question, onStart }) => {
             <Button 
               onClick={onStart}
               size="lg"
-              className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg font-semibold"
+              className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg font-semibold border-0"
             >
               <Play className="w-5 h-5 mr-2" />
               Start Exam

@@ -25,13 +25,13 @@ const Unauthorized = () => {
             <Button 
               onClick={() => window.history.back()}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-gray-700 border-gray-300 hover:bg-gray-50 hover:text-gray-900"
             >
               <ArrowLeft className="w-4 h-4" />
               Go Back
             </Button>
             <Link to="/">
-              <Button className="flex items-center gap-2">
+              <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white">
                 Go Home
               </Button>
             </Link>

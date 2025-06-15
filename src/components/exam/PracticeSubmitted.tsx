@@ -36,10 +36,10 @@ const PracticeSubmitted: React.FC<PracticeSubmittedProps> = ({
   };
 
   const getPerformanceBadge = (rate: number) => {
-    if (rate === 100) return { text: 'Perfect!', color: 'bg-green-500' };
-    if (rate >= 80) return { text: 'Great!', color: 'bg-green-500' };
-    if (rate >= 60) return { text: 'Good', color: 'bg-yellow-500' };
-    return { text: 'Keep Practicing', color: 'bg-orange-500' };
+    if (rate === 100) return { text: 'Perfect!', color: 'bg-green-500 text-white' };
+    if (rate >= 80) return { text: 'Great!', color: 'bg-green-500 text-white' };
+    if (rate >= 60) return { text: 'Good', color: 'bg-yellow-500 text-white' };
+    return { text: 'Keep Practicing', color: 'bg-orange-500 text-white' };
   };
 
   const badge = getPerformanceBadge(successRate);
@@ -71,7 +71,7 @@ const PracticeSubmitted: React.FC<PracticeSubmittedProps> = ({
                   {passedTests}/{totalTests}
                 </div>
                 <div className="text-sm text-gray-600">Tests Passed</div>
-                <Badge className={`mt-2 ${badge.color} text-white border-0`}>
+                <Badge className={`mt-2 ${badge.color} border-0`}>
                   {badge.text}
                 </Badge>
               </CardContent>
@@ -114,7 +114,7 @@ const PracticeSubmitted: React.FC<PracticeSubmittedProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Difficulty:</span>
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs text-gray-700 border-gray-300">
                     {question.difficulty}
                   </Badge>
                 </div>
@@ -141,7 +141,7 @@ const PracticeSubmitted: React.FC<PracticeSubmittedProps> = ({
             <Button 
               onClick={() => window.location.reload()}
               variant="outline"
-              className="flex-1 gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="flex-1 gap-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
             >
               <RotateCcw className="w-4 h-4" />
               Try Again
@@ -149,7 +149,7 @@ const PracticeSubmitted: React.FC<PracticeSubmittedProps> = ({
             
             <Button 
               onClick={onContinue}
-              className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700"
+              className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white"
             >
               {pathId ? (
                 <>

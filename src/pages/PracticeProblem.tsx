@@ -79,7 +79,7 @@ const PracticeProblem = () => {
           </div>
           <h1 className="text-xl font-semibold text-gray-900 mb-2">Problem Not Found</h1>
           <p className="text-gray-600 mb-6">The requested problem could not be loaded.</p>
-          <Button onClick={() => navigate('/practice')} variant="outline" className="gap-2">
+          <Button onClick={() => navigate('/practice')} variant="outline" className="gap-2 text-gray-700 border-gray-300 hover:bg-gray-50 hover:text-gray-900">
             <ArrowLeft className="w-4 h-4" />
             Back to Practice
           </Button>
@@ -118,7 +118,7 @@ const PracticeProblem = () => {
                 onClick={() => navigate('/practice')} 
                 variant="ghost"
                 size="sm"
-                className="gap-2 text-gray-600 hover:text-gray-900"
+                className="gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span className="hidden sm:inline">Back to Practice</span>
@@ -141,7 +141,7 @@ const PracticeProblem = () => {
             {/* Right Section */}
             <div className="flex items-center gap-3 flex-shrink-0">
               {question.timeEstimate && (
-                <div className="flex items-center gap-1 bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg text-sm">
+                <div className="flex items-center gap-1 bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg text-sm border border-gray-200">
                   <Clock className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Est. </span>
                   <span>{question.timeEstimate} min</span>
@@ -149,7 +149,7 @@ const PracticeProblem = () => {
               )}
               
               {pathId && (
-                <div className="flex items-center gap-1 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-lg text-sm border border-purple-100">
+                <div className="flex items-center gap-1 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-lg text-sm border border-purple-200">
                   <BookOpen className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Learning Path</span>
                   <span className="sm:hidden">Path</span>

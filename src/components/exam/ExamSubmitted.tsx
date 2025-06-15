@@ -28,10 +28,10 @@ const ExamSubmitted: React.FC<ExamSubmittedProps> = ({ question, submissionData 
   };
 
   const getPerformanceBadge = (rate: number) => {
-    if (rate === 100) return { text: 'Perfect!', color: 'bg-green-600' };
-    if (rate >= 80) return { text: 'Great!', color: 'bg-green-500' };
-    if (rate >= 60) return { text: 'Good', color: 'bg-yellow-500' };
-    return { text: 'Needs Work', color: 'bg-red-500' };
+    if (rate === 100) return { text: 'Perfect!', color: 'bg-green-600 text-white' };
+    if (rate >= 80) return { text: 'Great!', color: 'bg-green-500 text-white' };
+    if (rate >= 60) return { text: 'Good', color: 'bg-yellow-500 text-white' };
+    return { text: 'Needs Work', color: 'bg-red-500 text-white' };
   };
 
   const badge = getPerformanceBadge(successRate);
@@ -63,7 +63,7 @@ const ExamSubmitted: React.FC<ExamSubmittedProps> = ({ question, submissionData 
                   {passedTests}/{totalTests}
                 </div>
                 <div className="text-sm text-gray-300">Tests Passed</div>
-                <Badge className={`mt-2 ${badge.color} text-white`}>
+                <Badge className={`mt-2 ${badge.color} border-0`}>
                   {badge.text}
                 </Badge>
               </CardContent>
@@ -116,7 +116,7 @@ const ExamSubmitted: React.FC<ExamSubmittedProps> = ({ question, submissionData 
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400">Status:</span>
-                  <Badge className="bg-green-600 text-white">
+                  <Badge className="bg-green-600 text-white border-0">
                     Submitted
                   </Badge>
                 </div>
