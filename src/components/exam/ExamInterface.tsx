@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Send, Play, AlertTriangle, Eye, Code } from 'lucide-react';
+import { Send, Play, AlertTriangle, Eye, Code, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -288,29 +288,31 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
 
   if (!safeQuestion.id) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-center">
-          <h1 className="text-2xl font-bold mb-4">Question Not Found</h1>
-          <p>The requested question could not be loaded.</p>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4 text-gray-900">Question Not Found</h1>
+          <p className="text-gray-600">The requested question could not be loaded.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="h-full bg-white">
       {/* Tab Switch Warning Overlay */}
       {showTabWarning && (
-        <div className="fixed inset-0 bg-red-900/80 flex items-center justify-center z-50">
-          <Card className="bg-red-800 border-red-600 text-white max-w-md">
+        <div className="fixed inset-0 bg-red-500/10 backdrop-blur-sm flex items-center justify-center z-50">
+          <Card className="bg-white border-red-200 shadow-xl max-w-md mx-4">
             <CardContent className="p-6 text-center">
-              <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">Tab Switch Detected!</h2>
-              <p className="text-red-200 mb-4">
+              <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-6 h-6 text-red-500" />
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Tab Switch Detected!</h2>
+              <p className="text-gray-600 mb-4">
                 You have switched tabs {tabSwitchData.totalSwitches} times. 
                 This behavior is being tracked and will affect your evaluation.
               </p>
-              <p className="text-sm text-red-300">
+              <p className="text-sm text-gray-500">
                 Please focus on this window to avoid further warnings.
               </p>
             </CardContent>
@@ -318,24 +320,23 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
         </div>
       )}
 
-      {/* Header */}
-      <div className="border-b border-gray-700/50 bg-gray-900/80 backdrop-blur-md px-6 py-4">
+      {/* Action Bar */}
+      <div className="border-b border-gray-100 bg-white px-6 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-bold text-white truncate max-w-md">
-              {safeQuestion.title}
-            </h1>
-            <Badge className="bg-blue-600 flex-shrink-0">
-              {safeQuestion.difficulty}
-            </Badge>
-            {tabSwitchData.totalSwitches > 0 && (
-              <Badge className="bg-red-600 flex-shrink-0">
-                Tab Switches: {tabSwitchData.totalSwitches}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="text-xs">
+                {safeQuestion.difficulty}
               </Badge>
-            )}
+              {tabSwitchData.totalSwitches > 0 && (
+                <Badge variant="destructive" className="text-xs">
+                  Switches: {tabSwitchData.totalSwitches}
+                </Badge>
+              )}
+            </div>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-3">
             <ExamTimer 
               timeLeft={timeLeft} 
               totalTime={timeLimit * 60} 
@@ -345,56 +346,96 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
               onClick={runTests}
               disabled={isRunning || hasSubmitted}
               variant="outline"
-              className="border-green-600 text-green-400 hover:bg-green-600/10 flex-shrink-0"
+              size="sm"
+              className="gap-2 border-green-200 text-green-700 hover:bg-green-50"
             >
-              <Play className="w-4 h-4 mr-2" />
+              <Play className="w-4 h-4" />
               {isRunning ? 'Running...' : 'Run Tests'}
             </Button>
             
             <Button
               onClick={handleSubmit}
               disabled={hasSubmitted}
-              className="bg-blue-600 hover:bg-blue-700 flex-shrink-0"
+              size="sm"
+              className="gap-2 bg-blue-600 hover:bg-blue-700"
             >
-              <Send className="w-4 h-4 mr-2" />
-              Submit Solution
+              <Send className="w-4 h-4" />
+              Submit
             </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex h-[calc(100vh-73px)]">
+      <div className="flex h-[calc(100%-5rem)]">
         {/* Left Panel - Problem Description and Results */}
-        <div className="w-1/3 border-r border-gray-700/50 bg-gray-900/30 overflow-y-auto">
+        <div className="w-1/3 border-r border-gray-100 bg-gray-50/30 overflow-y-auto">
           <div className="p-6 space-y-6">
-            <Card className="bg-gray-800/50 border-gray-700 text-white">
-              <CardHeader>
-                <CardTitle className="text-lg text-blue-400">Problem Description</CardTitle>
+            <Card className="bg-white border-gray-100 shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg text-gray-900 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  Problem Description
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="whitespace-pre-line text-gray-300 leading-relaxed">
-                  {safeQuestion.description || 'No description available'}
+              <CardContent className="pt-0">
+                <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+                  {safeQuestion.description?.split('\n').map((line, i) => (
+                    <p key={i} className="mb-2">{line}</p>
+                  )) || 'No description available'}
                 </div>
               </CardContent>
             </Card>
 
-            <TestResultsPanel results={testResults} isLoading={isRunning} />
+            {testResults.length > 0 && (
+              <Card className="bg-white border-gray-100 shadow-sm">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-lg text-gray-900 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    Test Results
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-3">
+                  {testResults.map((result, index) => (
+                    <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                      {result.passed ? (
+                        <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-red-500 mt-0.5" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 mb-1">
+                          Test {index + 1}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {result.testCase.description}
+                        </p>
+                        {result.error && (
+                          <p className="text-xs text-red-600 mt-1 font-mono">
+                            {result.error}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 
         {/* Right Panel - Code Editor and Preview */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col bg-white">
           {isReactExam ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-              <div className="border-b border-gray-700/50 bg-gray-800/30 px-4">
-                <TabsList className="bg-gray-800/50">
-                  <TabsTrigger value="code" className="data-[state=active]:bg-gray-700">
-                    <Code className="w-4 h-4 mr-2" />
+              <div className="border-b border-gray-100 px-6 py-2">
+                <TabsList className="bg-gray-50 p-1">
+                  <TabsTrigger value="code" className="gap-2 data-[state=active]:bg-white">
+                    <Code className="w-4 h-4" />
                     Code
                   </TabsTrigger>
-                  <TabsTrigger value="preview" className="data-[state=active]:bg-gray-700">
-                    <Eye className="w-4 h-4 mr-2" />
+                  <TabsTrigger value="preview" className="gap-2 data-[state=active]:bg-white">
+                    <Eye className="w-4 h-4" />
                     Preview
                   </TabsTrigger>
                 </TabsList>
@@ -404,7 +445,7 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
                 <MonacoEditor
                   height="100%"
                   language="javascript"
-                  theme="vs-dark"
+                  theme="light"
                   value={code}
                   onChange={(value) => setCode(value || '')}
                   options={{
@@ -420,36 +461,40 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
                     fontLigatures: true,
                     cursorBlinking: 'smooth',
                     smoothScrolling: true,
+                    padding: { top: 16, bottom: 16 },
                   }}
                 />
               </TabsContent>
               
-              <TabsContent value="preview" className="flex-1 m-0 p-4">
+              <TabsContent value="preview" className="flex-1 m-0 p-6">
                 {renderReactPreview()}
               </TabsContent>
             </Tabs>
           ) : (
-            <MonacoEditor
-              height="100%"
-              language="javascript"
-              theme="vs-dark"
-              value={code}
-              onChange={(value) => setCode(value || '')}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                lineNumbers: 'on',
-                roundedSelection: false,
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                tabSize: 2,
-                wordWrap: 'on',
-                fontFamily: 'JetBrains Mono, Fira Code, Monaco, monospace',
-                fontLigatures: true,
-                cursorBlinking: 'smooth',
-                smoothScrolling: true,
-              }}
-            />
+            <div className="flex-1 p-4">
+              <MonacoEditor
+                height="100%"
+                language="javascript"
+                theme="light"
+                value={code}
+                onChange={(value) => setCode(value || '')}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  lineNumbers: 'on',
+                  roundedSelection: false,
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  tabSize: 2,
+                  wordWrap: 'on',
+                  fontFamily: 'JetBrains Mono, Fira Code, Monaco, monospace',
+                  fontLigatures: true,
+                  cursorBlinking: 'smooth',
+                  smoothScrolling: true,
+                  padding: { top: 16, bottom: 16 },
+                }}
+              />
+            </div>
           )}
         </div>
       </div>
