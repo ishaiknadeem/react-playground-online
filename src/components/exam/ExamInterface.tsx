@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Send, Play, AlertTriangle, Eye, Code, CheckCircle2, XCircle, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,8 @@ import TestRunner from './TestRunner';
 import ExamTimer from './ExamTimer';
 import TestResultsPanel from './TestResultsPanel';
 import { Toggle } from '@/components/ui/toggle';
+import ProctoringManager, { ProctoringViolation } from './ProctoringManager';
+import { useAppSelector } from '@/store/store';
 
 interface ExamInterfaceProps {
   question: Question;
@@ -30,9 +31,14 @@ interface TabSwitchData {
   totalSwitches: number;
   switchTimestamps: string[];
   warningsShown: number;
+  proctoringViolations: ProctoringViolation[];
 }
 
 const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSubmit }) => {
+  // Get proctoring settings from Redux store
+  const { settings } = useAppSelector(state => state.settings);
+  const isProctoringEnabled = settings?.proctoring === true;
+
   // Local theme state - only affects this component
   const [localTheme, setLocalTheme] = useState<'light' | 'dark'>('light');
   
@@ -57,7 +63,8 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
   const [tabSwitchData, setTabSwitchData] = useState<TabSwitchData>({
     totalSwitches: 0,
     switchTimestamps: [],
-    warningsShown: 0
+    warningsShown: 0,
+    proctoringViolations: []
   });
   const [showTabWarning, setShowTabWarning] = useState(false);
   const [activeTab, setActiveTab] = useState('code');
@@ -65,6 +72,31 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
   const toggleLocalTheme = () => {
     setLocalTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
+
+  // Handle proctoring violations
+  const handleProctoringViolation = useCallback((violation: ProctoringViolation) => {
+    console.log('Proctoring violation detected:', violation);
+    
+    setTabSwitchData(prev => ({
+      ...prev,
+      proctoringViolations: [...prev.proctoringViolations, violation]
+    }));
+
+    // Show appropriate warning based on severity
+    if (violation.severity === 'high') {
+      toast({
+        title: "🚨 Security Violation",
+        description: violation.description,
+        variant: "destructive"
+      });
+    } else if (violation.severity === 'medium') {
+      toast({
+        title: "⚠️ Security Warning",
+        description: violation.description,
+        variant: "destructive"
+      });
+    }
+  }, []);
 
   // Check if this is a React exam
   const isReactExam = React.useMemo(() => {
@@ -90,9 +122,9 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
         
         setTabSwitchData(prev => {
           const newData = {
+            ...prev,
             totalSwitches: prev.totalSwitches + 1,
-            switchTimestamps: [...prev.switchTimestamps, now],
-            warningsShown: prev.warningsShown
+            switchTimestamps: [...prev.switchTimestamps, now]
           };
           
           console.log('Tab switch detected:', newData);
@@ -307,6 +339,15 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
 
   return (
     <div className={`h-full ${localTheme === 'dark' ? 'bg-gray-900' : 'bg-white'}`}>
+      {/* Proctoring Manager */}
+      {isProctoringEnabled && (
+        <ProctoringManager
+          isEnabled={true}
+          onViolation={handleProctoringViolation}
+          examId={safeQuestion.id}
+        />
+      )}
+
       {/* Tab Switch Warning Overlay */}
       {showTabWarning && (
         <div className="fixed inset-0 bg-red-500/10 backdrop-blur-sm flex items-center justify-center z-50">
@@ -339,6 +380,11 @@ const ExamInterface: React.FC<ExamInterfaceProps> = ({ question, startTime, onSu
               {tabSwitchData.totalSwitches > 0 && (
                 <Badge variant="destructive" className="text-xs">
                   Switches: {tabSwitchData.totalSwitches}
+                </Badge>
+              )}
+              {tabSwitchData.proctoringViolations.length > 0 && (
+                <Badge variant="destructive" className="text-xs">
+                  Violations: {tabSwitchData.proctoringViolations.length}
                 </Badge>
               )}
             </div>
