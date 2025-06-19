@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -11,28 +11,28 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import { useAuthInit } from './hooks/useAuthInit';
 
-// Page imports
-import Index from './pages/Index';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Dashboard from './pages/Dashboard';
-import Exam from './pages/Exam';
-import ExaminersPage from './pages/dashboard/ExaminersPage';
-import AllExamsPage from './pages/dashboard/AllExamsPage';
-import MyExamsPage from './pages/dashboard/MyExamsPage';
-import CandidatesPage from './pages/dashboard/CandidatesPage';
-import SettingsPage from './pages/dashboard/SettingsPage';
-import Practice from './pages/Practice';
-import PracticeProblem from './pages/PracticeProblem';
-import CandidateLogin from './pages/CandidateLogin';
-import CandidateSettings from './pages/CandidateSettings';
-import NotFound from './pages/NotFound';
-import Unauthorized from './pages/Unauthorized';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import TermsOfService from './pages/TermsOfService';
-import CookiePolicy from './pages/CookiePolicy';
-import About from './pages/About';
-import Contact from './pages/Contact';
+// Lazy load all page components
+const Index = React.lazy(() => import('./pages/Index'));
+const Login = React.lazy(() => import('./pages/Login'));
+const Signup = React.lazy(() => import('./pages/Signup'));
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const Exam = React.lazy(() => import('./pages/Exam'));
+const ExaminersPage = React.lazy(() => import('./pages/dashboard/ExaminersPage'));
+const AllExamsPage = React.lazy(() => import('./pages/dashboard/AllExamsPage'));
+const MyExamsPage = React.lazy(() => import('./pages/dashboard/MyExamsPage'));
+const CandidatesPage = React.lazy(() => import('./pages/dashboard/CandidatesPage'));
+const SettingsPage = React.lazy(() => import('./pages/dashboard/SettingsPage'));
+const Practice = React.lazy(() => import('./pages/Practice'));
+const PracticeProblem = React.lazy(() => import('./pages/PracticeProblem'));
+const CandidateLogin = React.lazy(() => import('./pages/CandidateLogin'));
+const CandidateSettings = React.lazy(() => import('./pages/CandidateSettings'));
+const NotFound = React.lazy(() => import('./pages/NotFound'));
+const Unauthorized = React.lazy(() => import('./pages/Unauthorized'));
+const PrivacyPolicy = React.lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = React.lazy(() => import('./pages/TermsOfService'));
+const CookiePolicy = React.lazy(() => import('./pages/CookiePolicy'));
+const About = React.lazy(() => import('./pages/About'));
+const Contact = React.lazy(() => import('./pages/Contact'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +43,13 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Route loading fallback component
+const RouteLoadingFallback = ({ routeName }: { routeName: string }) => (
+  <div className="min-h-screen flex items-center justify-center">
+    <LoadingSpinner size="lg" text={`Loading ${routeName}...`} />
+  </div>
+);
 
 const AppContent = () => {
   const { initialized } = useAuthInit();
@@ -60,147 +67,191 @@ const AppContent = () => {
   return (
     <Router>
       <div className="App">
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={
-            <RouteErrorBoundary routeName="Home">
-              <Index />
-            </RouteErrorBoundary>
-          } />
-          <Route path="/login" element={
-            <RouteErrorBoundary routeName="Login">
-              <Login />
-            </RouteErrorBoundary>
-          } />
-          <Route path="/register" element={
-            <RouteErrorBoundary routeName="Register">
-              <Signup />
-            </RouteErrorBoundary>
-          } />
-          <Route path="/candidate-login" element={
-            <RouteErrorBoundary routeName="Candidate Login">
-              <CandidateLogin />
-            </RouteErrorBoundary>
-          } />
-          <Route path="/unauthorized" element={
-            <RouteErrorBoundary routeName="Unauthorized">
-              <Unauthorized />
-            </RouteErrorBoundary>
-          } />
-          
-          {/* Public information pages */}
-          <Route path="/privacy-policy" element={
-            <RouteErrorBoundary routeName="Privacy Policy">
-              <PrivacyPolicy />
-            </RouteErrorBoundary>
-          } />
-          <Route path="/terms-of-service" element={
-            <RouteErrorBoundary routeName="Terms of Service">
-              <TermsOfService />
-            </RouteErrorBoundary>
-          } />
-          <Route path="/cookie-policy" element={
-            <RouteErrorBoundary routeName="Cookie Policy">
-              <CookiePolicy />
-            </RouteErrorBoundary>
-          } />
-          <Route path="/about" element={
-            <RouteErrorBoundary routeName="About">
-              <About />
-            </RouteErrorBoundary>
-          } />
-          <Route path="/contact" element={
-            <RouteErrorBoundary routeName="Contact">
-              <Contact />
-            </RouteErrorBoundary>
-          } />
-          
-          {/* Public exam route - no authentication required - MOVED UP FOR PRIORITY */}
-          <Route path="/exam" element={
-            <RouteErrorBoundary routeName="Exam">
-              {(() => {
-                console.log('Exam route matched! Rendering Exam component...');
-                return <Exam />;
-              })()}
-            </RouteErrorBoundary>
-          } />
-          
-          {/* Admin/Examiner protected routes */}
-          <Route path="/dashboard" element={
-            <RouteErrorBoundary routeName="Dashboard">
-              <ProtectedRoute allowedRoles={['admin', 'examiner']}>
-                <Dashboard />
-              </ProtectedRoute>
-            </RouteErrorBoundary>
-          } />
-          
-          {/* Admin only routes */}
-          <Route path="/dashboard/examiners" element={
-            <RouteErrorBoundary routeName="Examiners Management">
-              <ProtectedRoute allowedRoles={['admin']}>
-                <ExaminersPage />
-              </ProtectedRoute>
-            </RouteErrorBoundary>
-          } />
-          <Route path="/dashboard/exams" element={
-            <RouteErrorBoundary routeName="All Exams">
-              <ProtectedRoute allowedRoles={['admin', 'examiner']}>
-                <AllExamsPage />
-              </ProtectedRoute>
-            </RouteErrorBoundary>
-          } />
-          <Route path="/dashboard/my-exams" element={
-            <RouteErrorBoundary routeName="My Exams">
-              <ProtectedRoute allowedRoles={['admin', 'examiner']}>
-                <MyExamsPage />
-              </ProtectedRoute>
-            </RouteErrorBoundary>
-          } />
-          <Route path="/dashboard/candidates" element={
-            <RouteErrorBoundary routeName="Candidates Management">
-              <ProtectedRoute allowedRoles={['admin', 'examiner']}>
-                <CandidatesPage />
-              </ProtectedRoute>
-            </RouteErrorBoundary>
-          } />
-          <Route path="/dashboard/settings" element={
-            <RouteErrorBoundary routeName="Settings">
-              <ProtectedRoute allowedRoles={['admin']}>
-                <SettingsPage />
-              </ProtectedRoute>
-            </RouteErrorBoundary>
-          } />
-          
-          {/* Authenticated user routes (all roles) */}
-          <Route path="/practice" element={
-            <RouteErrorBoundary routeName="Practice">
-              <ProtectedRoute>
-                <Practice />
-              </ProtectedRoute>
-            </RouteErrorBoundary>
-          } />
-          <Route path="/practice/problem" element={
-            <RouteErrorBoundary routeName="Practice Problem">
-              <ProtectedRoute>
-                <PracticeProblem />
-              </ProtectedRoute>
-            </RouteErrorBoundary>
-          } />
-          <Route path="/candidate-settings" element={
-            <RouteErrorBoundary routeName="Candidate Settings">
-              <ProtectedRoute>
-                <CandidateSettings />
-              </ProtectedRoute>
-            </RouteErrorBoundary>
-          } />
-          
-          {/* Catch all route for 404 */}
-          <Route path="*" element={
-            <RouteErrorBoundary routeName="404 Not Found">
-              <NotFound />
-            </RouteErrorBoundary>
-          } />
-        </Routes>
+        <Suspense fallback={<RouteLoadingFallback routeName="Application" />}>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={
+              <RouteErrorBoundary routeName="Home">
+                <Suspense fallback={<RouteLoadingFallback routeName="Home" />}>
+                  <Index />
+                </Suspense>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/login" element={
+              <RouteErrorBoundary routeName="Login">
+                <Suspense fallback={<RouteLoadingFallback routeName="Login" />}>
+                  <Login />
+                </Suspense>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/register" element={
+              <RouteErrorBoundary routeName="Register">
+                <Suspense fallback={<RouteLoadingFallback routeName="Register" />}>
+                  <Signup />
+                </Suspense>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/candidate-login" element={
+              <RouteErrorBoundary routeName="Candidate Login">
+                <Suspense fallback={<RouteLoadingFallback routeName="Candidate Login" />}>
+                  <CandidateLogin />
+                </Suspense>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/unauthorized" element={
+              <RouteErrorBoundary routeName="Unauthorized">
+                <Suspense fallback={<RouteLoadingFallback routeName="Unauthorized" />}>
+                  <Unauthorized />
+                </Suspense>
+              </RouteErrorBoundary>
+            } />
+            
+            {/* Public information pages */}
+            <Route path="/privacy-policy" element={
+              <RouteErrorBoundary routeName="Privacy Policy">
+                <Suspense fallback={<RouteLoadingFallback routeName="Privacy Policy" />}>
+                  <PrivacyPolicy />
+                </Suspense>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/terms-of-service" element={
+              <RouteErrorBoundary routeName="Terms of Service">
+                <Suspense fallback={<RouteLoadingFallback routeName="Terms of Service" />}>
+                  <TermsOfService />
+                </Suspense>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/cookie-policy" element={
+              <RouteErrorBoundary routeName="Cookie Policy">
+                <Suspense fallback={<RouteLoadingFallback routeName="Cookie Policy" />}>
+                  <CookiePolicy />
+                </Suspense>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/about" element={
+              <RouteErrorBoundary routeName="About">
+                <Suspense fallback={<RouteLoadingFallback routeName="About" />}>
+                  <About />
+                </Suspense>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/contact" element={
+              <RouteErrorBoundary routeName="Contact">
+                <Suspense fallback={<RouteLoadingFallback routeName="Contact" />}>
+                  <Contact />
+                </Suspense>
+              </RouteErrorBoundary>
+            } />
+            
+            {/* Public exam route - no authentication required - MOVED UP FOR PRIORITY */}
+            <Route path="/exam" element={
+              <RouteErrorBoundary routeName="Exam">
+                <Suspense fallback={<RouteLoadingFallback routeName="Exam" />}>
+                  {(() => {
+                    console.log('Exam route matched! Rendering Exam component...');
+                    return <Exam />;
+                  })()}
+                </Suspense>
+              </RouteErrorBoundary>
+            } />
+            
+            {/* Admin/Examiner protected routes */}
+            <Route path="/dashboard" element={
+              <RouteErrorBoundary routeName="Dashboard">
+                <ProtectedRoute allowedRoles={['admin', 'examiner']}>
+                  <Suspense fallback={<RouteLoadingFallback routeName="Dashboard" />}>
+                    <Dashboard />
+                  </Suspense>
+                </ProtectedRoute>
+              </RouteErrorBoundary>
+            } />
+            
+            {/* Admin only routes */}
+            <Route path="/dashboard/examiners" element={
+              <RouteErrorBoundary routeName="Examiners Management">
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <Suspense fallback={<RouteLoadingFallback routeName="Examiners Management" />}>
+                    <ExaminersPage />
+                  </Suspense>
+                </ProtectedRoute>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/dashboard/exams" element={
+              <RouteErrorBoundary routeName="All Exams">
+                <ProtectedRoute allowedRoles={['admin', 'examiner']}>
+                  <Suspense fallback={<RouteLoadingFallback routeName="All Exams" />}>
+                    <AllExamsPage />
+                  </Suspense>
+                </ProtectedRoute>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/dashboard/my-exams" element={
+              <RouteErrorBoundary routeName="My Exams">
+                <ProtectedRoute allowedRoles={['admin', 'examiner']}>
+                  <Suspense fallback={<RouteLoadingFallback routeName="My Exams" />}>
+                    <MyExamsPage />
+                  </Suspense>
+                </ProtectedRoute>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/dashboard/candidates" element={
+              <RouteErrorBoundary routeName="Candidates Management">
+                <ProtectedRoute allowedRoles={['admin', 'examiner']}>
+                  <Suspense fallback={<RouteLoadingFallback routeName="Candidates Management" />}>
+                    <CandidatesPage />
+                  </Suspense>
+                </ProtectedRoute>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/dashboard/settings" element={
+              <RouteErrorBoundary routeName="Settings">
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <Suspense fallback={<RouteLoadingFallback routeName="Settings" />}>
+                    <SettingsPage />
+                  </Suspense>
+                </ProtectedRoute>
+              </RouteErrorBoundary>
+            } />
+            
+            {/* Authenticated user routes (all roles) */}
+            <Route path="/practice" element={
+              <RouteErrorBoundary routeName="Practice">
+                <ProtectedRoute>
+                  <Suspense fallback={<RouteLoadingFallback routeName="Practice" />}>
+                    <Practice />
+                  </Suspense>
+                </ProtectedRoute>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/practice/problem" element={
+              <RouteErrorBoundary routeName="Practice Problem">
+                <ProtectedRoute>
+                  <Suspense fallback={<RouteLoadingFallback routeName="Practice Problem" />}>
+                    <PracticeProblem />
+                  </Suspense>
+                </ProtectedRoute>
+              </RouteErrorBoundary>
+            } />
+            <Route path="/candidate-settings" element={
+              <RouteErrorBoundary routeName="Candidate Settings">
+                <ProtectedRoute>
+                  <Suspense fallback={<RouteLoadingFallback routeName="Candidate Settings" />}>
+                    <CandidateSettings />
+                  </Suspense>
+                </ProtectedRoute>
+              </RouteErrorBoundary>
+            } />
+            
+            {/* Catch all route for 404 */}
+            <Route path="*" element={
+              <RouteErrorBoundary routeName="404 Not Found">
+                <Suspense fallback={<RouteLoadingFallback routeName="404 Page" />}>
+                  <NotFound />
+                </Suspense>
+              </RouteErrorBoundary>
+            } />
+          </Routes>
+        </Suspense>
         <Toaster />
       </div>
     </Router>
